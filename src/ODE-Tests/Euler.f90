@@ -21,7 +21,7 @@
 !
 ! Build with:
 !
-!   cd ode_tests
+!   cd ODE-Tests
 !
 !   rm -rf *.mod; \
 !     gfortran -std=f2008 -O3 -Wall -Wno-unused-dummy-argument \
