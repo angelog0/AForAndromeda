@@ -54,7 +54,7 @@
 !
 ! HOW TO BUILD THE APP
 !
-!   cd nbody
+!   cd N-Body
 !
 !   rm -rf *.mod && \
 !   gfortran[-mp-X] [-Warray-temporaries] -O3 -Wall \
