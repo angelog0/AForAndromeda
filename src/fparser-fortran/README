@@ -1,0 +1,51 @@
+		   F P A R S E R  -  F O R T R A N
+		   ===============================
+
+			 by  Angelo Graziosi
+
+
+
+
+
+
+I N T R O D U C T I O N
+=======================
+
+This document contains a few examples of fortran programs "using" the
+Function Parser (FParser) library.
+
+It is a C++ library which we have interfaced in fortran exploiting the
+new Fortran >= 2003 standards.
+
+We started using function parser since the end of the 1980s. Indeed at
+that time there was, on accademia environments, a parser written in
+Pascal called FONCTION (or Fonction ptr?, we don't remember...).
+
+Successively, we rewrote it in C/C++ and used it exensively in many
+programs.
+
+A few years ago, we found FunctionParser
+(http://warp.povusers.org/FunctionParser) and interfaced it. Since it
+is written in C++, we needed to interface it first in C an then in
+fortran.
+
+To test it, we wrote a simple test program, fparser_test.f90, which,
+in the initial comment, explains as the parser is built.
+
+fparser_dp.f90 and fparser_cd.f90 contain the modules which interface
+real and complex functions. cwrapper_fparser.cc is the C interface to
+the parser.
+
+With these modules, we have also written some BGI applications (see
+for example dynamics2d.f90, in the document about BGI-Fortran on this
+site).
+
+
+
+
+
+
+
+--------------------------------------------------------------
+This document has been created using EMACS (and some "friends"
+tools like ps2pdf, pdftk etc..).
