@@ -46,7 +46,7 @@
 !
 ! HOW TO BUILD THE APP
 !
-!   cd ~/programming/nbody.apps
+!   cd N-Body
 !
 !   rm -rf *.mod && \
 !   gfortran[-mp-X] -O3 [-march=native -funroll-loops] -Wall \
