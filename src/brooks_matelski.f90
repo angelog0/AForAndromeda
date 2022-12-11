@@ -7,6 +7,11 @@
 !
 ! See also: https://fortran-lang.discourse.group/t/first-mandelbrot-set/2198
 !
+!
+! Brooks and Matelski paper:
+!
+! https://abel.math.harvard.edu/archive/118r_spring_05/docs/brooksmatelski.pdf
+!
 
 program brooks_matelski
   implicit none
