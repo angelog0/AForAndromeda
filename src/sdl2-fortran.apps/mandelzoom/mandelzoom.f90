@@ -2,7 +2,7 @@
 ! Author: ANGELO GRAZIOSI
 !
 !   created   : Aug 12, 2018
-!   last edit : Dec 11, 2022
+!   last edit : Dec 13, 2022
 !
 !   Zooming in the Mandelbrot Set
 !
@@ -542,7 +542,9 @@ contains
       open(newunit=data_unit,file=FNAME,access='STREAM',form='UNFORMATTED', &
            status='REPLACE')
 
+      ! Now PPM start
       ! Writing to a character buffer
+      buf = ''
       write(buf,'(2(A,i0),A)') 'P6'//char(10), &
            i_max+1, ' ', j_max+1, &
            char(10)//'255'//char(10)
@@ -565,9 +567,14 @@ contains
          end do
       end do
 
-      ! Saving 'The Fractal'... The PPM format should ignore the
+      !
+      ! Saving 'The Fractal' informations... The PPM format should ignore the
       ! lines starting with '#'
-      write(buf,*) '# ', xm, ym, xstep, ystep
+      !
+      ! Start with the max. number of iterations, dimensions and then
+      ! the region where the fractal lives..
+      buf = ''
+      write(buf,*) '# ', max_iter, i_max+1, j_max+1, xm, ym, xstep, ystep
       write(data_unit) trim(adjustl(buf))
 
       ! If I_MAX+1 = J_MAX+1 = 800, the total size is
