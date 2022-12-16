@@ -5,7 +5,6 @@
 !   last edit : Dec 16, 2022
 !
 !   Display Brooks Matelski figure.
-!   (Just a SDL2-Fortran app in less than 160 lines of code!)
 !
 ! DESCRIPTION
 !
@@ -14,18 +13,15 @@
 !
 ! HOW TO BUILD THE APP
 !
-!   cd sdl2-fortran.apps
+!   cd ~/programming/misc.apps
 !
-!   git clone https://github.com/interkosmos/fortran-sdl2.git
-!
-!   cd brkmtlsk
-!
-!   rm -rf *.mod; \
+!   rm -rf {*.mod,../modules/*}; \
 !     gfortran[-mp-X] -std=f2008 -O3 -Wall [`sdl2-config --cflags`] \
-!       ../../basic-modules/{{kind,math}_consts,nicelabels}.f90 \
-!       $SDL2F90 ../SDL2_app.f90 display_brkmtlsk.f90 \
+!       -J ../modules ../basic-modules/{{kind,math}_consts,nicelabels}.f90 \
+!       $SDL2F90 ../sdl2-fortran.apps/SDL2_app.f90 \
+!       display_brkmtlsk.f90 \
 !       $LIBS -o display_brkmtlsk$EXE; \
-!   rm -rf *.mod
+!   rm -rf {*.mod,../modules/*}
 !
 !   ./display_brkmtlsk$EXE
 !
@@ -33,13 +29,13 @@
 !
 !     EXE = .out
 !
-!   while for the build on MSYS2/MINGW64 is:
+!   while for the build on MINGW{32,64} is:
 !
 !     EXE = -$MSYSTEM (or EMPTY)
 !
 !   and (all platform):
 !
-!     SDL2F90 = ../fortran-sdl2/src/{c_util,sdl2/{sdl2_stdinc,sdl2_audio,\
+!     SDL2F90 = ../sdl2-fortran/src/{c_util,sdl2/{sdl2_stdinc,sdl2_audio,\
 !       sdl2_blendmode,sdl2_cpuinfo,sdl2_gamecontroller,sdl2_error,\
 !       sdl2_events,sdl2_filesystem,sdl2_hints,sdl2_joystick,sdl2_keyboard,\
 !       sdl2_log,sdl2_messagebox,sdl2_rect,sdl2_pixels,sdl2_platform,\
@@ -51,7 +47,7 @@
 !     LIBS = `sdl2-config --libs`
 !
 !   Notice that the above definition for LIBS produces a pure Windows
-!   app on MSYS2/MINGW64. This means that it will not show up a
+!   app on MINGW{32,64}. This means that it will not show up a
 !   console/terminal for input data. On these systems, the LIBS
 !   definition should be:
 !
@@ -70,7 +66,6 @@
 !
 
 program display_brkmtlsk
-  use sdl2, only: sdl_rect
   use SDL2_app, only: init_graphics, close_graphics, set_rgba_color, &
        draw_point, get_event, QUIT_EVENT, clear_screen, set_viewport, &
        refresh
@@ -82,7 +77,6 @@ program display_brkmtlsk
   integer :: data_unit, rows, cols, ierr, io_status, i, j, code, r, g, b
   integer :: ievent = -1000, i_max, j_max
   integer, allocatable :: fig(:,:)
-  type(sdl_rect)  :: rect
 
   ! Opening DATA file
   open(newunit=data_unit,file=FNAME,access='STREAM', &
@@ -113,9 +107,6 @@ program display_brkmtlsk
        width=cols,height=rows)
 
   call clear_screen()
-
-  rect = sdl_rect(0,0,cols,rows)
-  call set_viewport(rect)
 
   do while (ievent /= QUIT_EVENT)
 
