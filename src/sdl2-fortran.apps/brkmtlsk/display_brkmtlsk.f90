@@ -5,6 +5,7 @@
 !   last edit : Dec 16, 2022
 !
 !   Display Brooks Matelski figure.
+!   (Just a SDL2-Fortran app in less than 160 lines of code!)
 !
 ! DESCRIPTION
 !
@@ -13,15 +14,18 @@
 !
 ! HOW TO BUILD THE APP
 !
-!   cd ~/programming/misc.apps
+!   cd sdl2-fortran.apps
 !
-!   rm -rf {*.mod,../modules/*}; \
+!   git clone https://github.com/interkosmos/fortran-sdl2.git
+!
+!   cd brkmtlsk
+!
+!   rm -rf *.mod; \
 !     gfortran[-mp-X] -std=f2008 -O3 -Wall [`sdl2-config --cflags`] \
-!       -J ../modules ../basic-modules/{{kind,math}_consts,nicelabels}.f90 \
-!       $SDL2F90 ../sdl2-fortran.apps/SDL2_app.f90 \
-!       display_brkmtlsk.f90 \
+!       ../../basic-modules/{{kind,math}_consts,nicelabels}.f90 \
+!       $SDL2F90 ../SDL2_app.f90 display_brkmtlsk.f90 \
 !       $LIBS -o display_brkmtlsk$EXE; \
-!   rm -rf {*.mod,../modules/*}
+!   rm -rf *.mod
 !
 !   ./display_brkmtlsk$EXE
 !
@@ -29,13 +33,13 @@
 !
 !     EXE = .out
 !
-!   while for the build on MINGW{32,64} is:
+!   while for the build on MSYS2/MINGW64 is:
 !
 !     EXE = -$MSYSTEM (or EMPTY)
 !
 !   and (all platform):
 !
-!     SDL2F90 = ../sdl2-fortran/src/{c_util,sdl2/{sdl2_stdinc,sdl2_audio,\
+!     SDL2F90 = ../fortran-sdl2/src/{c_util,sdl2/{sdl2_stdinc,sdl2_audio,\
 !       sdl2_blendmode,sdl2_cpuinfo,sdl2_gamecontroller,sdl2_error,\
 !       sdl2_events,sdl2_filesystem,sdl2_hints,sdl2_joystick,sdl2_keyboard,\
 !       sdl2_log,sdl2_messagebox,sdl2_rect,sdl2_pixels,sdl2_platform,\
@@ -47,7 +51,7 @@
 !     LIBS = `sdl2-config --libs`
 !
 !   Notice that the above definition for LIBS produces a pure Windows
-!   app on MINGW{32,64}. This means that it will not show up a
+!   app on MSYS2/MINGW64. This means that it will not show up a
 !   console/terminal for input data. On these systems, the LIBS
 !   definition should be:
 !
