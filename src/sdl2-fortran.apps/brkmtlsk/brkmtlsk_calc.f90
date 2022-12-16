@@ -12,7 +12,7 @@
 ! The input parameters are:
 !
 !   - MAXIT  : The maximum number of iterations
-!   - XC, YC : The coordinated of center of the region in complex plane
+!   - XC, YC : The coordinates of center of the region in complex plane
 !   - SIZE   : The size of the region in complex plane (a square)
 !
 ! See: https://fortran-lang.discourse.group/t/first-mandelbrot-set/2198
