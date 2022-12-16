@@ -145,17 +145,12 @@ contains
   end subroutine app_off
 
   subroutine app_run()
-    use sdl2, only: sdl_rect
     use SDL2_app, only: QUIT_EVENT, &
          clear_screen, get_event, refresh, set_viewport
 
     integer :: ievent = -1000
-    type(sdl_rect)  :: rect
 
     call clear_screen()
-
-    rect = sdl_rect(0,0,i_max+1,j_max+1)
-    call set_viewport(rect)
 
     do while (ievent /= QUIT_EVENT)
 
