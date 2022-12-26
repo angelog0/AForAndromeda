@@ -451,7 +451,7 @@ contains
           ! Remember that PHI(:,:), on the first row, stores the left
           ! side of the plane while the last row stores the right.  On
           ! the first column, it stores the bottom and on the last
-          ! column it stores the top od the plane...
+          ! column it stores the top of the plane...
           !
           ! We scan PHI(:,:) by columns starting from the last (i.e
           ! from the top of the plane)..
@@ -480,7 +480,6 @@ contains
     call grid_on()
 
     call setup_aux_params()
-
     call setup_grid()
 
     ! Initialization of energy for convergence flags
