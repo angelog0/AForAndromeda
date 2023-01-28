@@ -2,7 +2,7 @@
 ! Author: ANGELO GRAZIOSI
 !
 !   created   : Jul 18, 2019
-!   last edit : Sep 11, 2019
+!   last edit : Jan 28, 2023
 !
 !   Simple module for ODE integration, being DY/DX = F(X,Y)
 !   the ODE system.
@@ -373,8 +373,9 @@ contains
     !
     !  Adapted from CERNLIB deqbs64.F:
     !
-    !    http://cernlib.sourcearchive.com/documentation/2005.05.09.dfsg/
-    !    deqbs64_8F_source.html
+    !   https://github.com/apc-llc/cernlib/blob/master/2006/src/mathlib/gen/d/deqbs64.F
+    !
+    !   (http://cernlib.sourcearchive.com/documentation/2005.05.09.dfsg/deqbs64_8F_source.html)
     !
     real(WP), parameter :: DELTA = 1.0E-14_WP, &
          Z1 = 1, HF = Z1/2, C1 = 3*Z1/2, &
