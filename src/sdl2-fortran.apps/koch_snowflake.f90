@@ -152,6 +152,8 @@ program koch_snowflake
        Y_MIN = -H, Y_MAX = H, &
        DPX = IMAX/(X_MAX-X_MIN), DPY = JMAX/(Y_MAX-Y_MIN)
 
+  character(len=*), parameter :: FMT = '(a,g0.7)'
+
   integer :: nargs, ievent = -1000
   real(WP) :: args_val
   character(len=80) :: args
@@ -172,17 +174,17 @@ program koch_snowflake
   if (num_iter < 0) num_iter = 0
   if (num_iter > 12) num_iter = 12
 
-  write(*,*) 'RUNNING WITH NUM_ITER = ', num_iter
+  write(*,'(a,i0)') 'Running with NUM_ITER = ', num_iter
   write(*,*)
-  write(*,*) 'NUMBER OF SIDES: ', 3 * 4**num_iter
-  write(*,*) 'LENGTH OF SIDES: ', (1.0_WP/3)**num_iter
-  write(*,*) 'PERIMETER      : ', 3*(4.0_WP/3)**num_iter
+  write(*,FMT) 'NUMBER OF SIDES: ', 3 * 4**num_iter
+  write(*,FMT) 'LENGTH OF SIDES: ', (1.0_WP/3)**num_iter
+  write(*,FMT) 'PERIMETER      : ', 3*(4.0_WP/3)**num_iter
   write(*,*)
-  write(*,*) 'DELTA          : ', SIN60/2
-  write(*,*) 'AREA/DELTA     : ', (8-3*(4.0_WP/9)**num_iter)/5
+  write(*,FMT) 'DELTA          : ', SIN60/2
+  write(*,FMT) 'AREA/DELTA     : ', (8-3*(4.0_WP/9)**num_iter)/5
   write(*,*)
   ! log_3(4) = ln(4)/ln(3) = log(4)/log(3)
-  write(*,*) 'FRACTAL DIM.   : ', log(4.0_WP)/log(3.0_WP)
+  write(*,FMT) 'FRACTAL DIM.   : ', log(4.0_WP)/log(3.0_WP)
 
   call init_graphics('The Koch Snowflake', &
        width=SCREEN_WIDTH,height=SCREEN_HEIGHT)
