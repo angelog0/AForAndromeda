@@ -2,7 +2,7 @@
 ! Author: ANGELO GRAZIOSI
 !
 !   created   : Jun 20, 2023
-!   last edit : Jun 22, 2023
+!   last edit : Jun 24, 2023
 !
 !   Koch Curve
 !
@@ -152,7 +152,7 @@ program koch_snowflake
        Y_MIN = -H, Y_MAX = H, &
        DPX = IMAX/(X_MAX-X_MIN), DPY = JMAX/(Y_MAX-Y_MIN)
 
-  character(len=*), parameter :: FMT = '(a,g0.7)'
+  character(len=*), parameter :: FMT = '(*(g0,1x))'
 
   integer :: nargs, ievent = -1000
   real(WP) :: args_val
@@ -174,7 +174,7 @@ program koch_snowflake
   if (num_iter < 0) num_iter = 0
   if (num_iter > 12) num_iter = 12
 
-  write(*,'(a,i0)') 'Running with NUM_ITER = ', num_iter
+  write(*,FMT) 'Running with NUM_ITER = ', num_iter
   write(*,*)
   write(*,FMT) 'NUMBER OF SIDES: ', 3 * 4**num_iter
   write(*,FMT) 'LENGTH OF SIDES: ', (1.0_WP/3)**num_iter
@@ -220,7 +220,7 @@ contains
     use SDL2_app, only: draw_line
     real(WP), intent(in) :: a(2), b(2)
 
-    integer :: ia, ja, ib, jb
+    integer, save :: ia, ja, ib, jb
 
     ! Tranformation WC to DC for the first point: A
     ia = nint(DPX*(a(1)-X_MIN))
