@@ -189,7 +189,7 @@ program star_walk_2d
   side = args_val(3)
   if (side < 0) side = 6*rms_d
 
-  ! ARGS_VAL(4) is SIDE...
+  ! ARGS_VAL(4) is VIEW_SIDE...
   view_side = args_val(4)
   if (view_side < 0) view_side = side
 
@@ -266,7 +266,7 @@ program star_walk_2d
      if (mod(i,100) == 0) write(*,FMT) 'CURRENT STEP            : ', i
   end do
 
-  ! Computing mean an sigma for final cluster(s)
+  ! Computing mean and sigma for final cluster(s)
   ! See: https://www.programming-idioms.org/idiom/203/calculate-mean-and-standard-deviation/3468/fortran
   !
   associate (x => p(1,:), y => p(2,:))
@@ -329,9 +329,9 @@ contains
     integer, save :: i
     real(WP), save :: d(2), r
 
-    ! G(P) = -SUM_i mu(i)*(r(P)-r(i))/|r(P)-r(i)|**3
+    ! G(P) = -SUM_i mu(i)*(r(P)-r(i))/|r(P)-r(i)|**3, with i /= P
     !
-    !   mu(i) = GNEWTON*m(i)
+    !   mu(i) = G*m(i)
     !
     ! Here mu(i) = 1
     !
@@ -341,7 +341,7 @@ contains
        d = p(:,i)-q         ! p(:,i)-q = -(q-p(:,i)): this avoids f = -f
        r = norm2(d)
 
-       if (r == 0) cycle
+       if (r == 0) cycle    ! i /= P ...
 
        d = d/r**3
        f = f+d
