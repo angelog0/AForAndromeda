@@ -233,18 +233,17 @@ program star_walk_2d
   call init_graphics('The Star Walk in 2D', &
        width=SCREEN_WIDTH,height=SCREEN_HEIGHT)
 
-  call clear_screen()
-
   do i = 1, nsteps
-     do j = 1, npoints
+     call clear_screen()
 
+     ! YELLOW: we have to set the color after calling CLEAR_SCREEN()
+     ! because... CLEAR_SCREEN() IS TOO PRIMITIVE!!!
+     call set_rgba_color(255,255,0)
+
+     do j = 1, npoints
         associate (q => p(:,j))
           call field(q,f)
           f = f/norm2(f)
-
-          ! BLACK : the current position
-          call set_rgba_color(0,0,0)
-          call draw_point(x2s(q(1)),y2s(q(2)))
 
           ! The diameter of the final cluster is determined by the
           ! step size F. Try:
@@ -255,8 +254,6 @@ program star_walk_2d
           !
           q = q+f
 
-          ! YELLOW : the update position
-          call set_rgba_color(255,255,0)
           call draw_point(x2s(q(1)),y2s(q(2)))
         end associate
      end do
