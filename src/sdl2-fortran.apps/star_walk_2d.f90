@@ -2,7 +2,7 @@
 ! Author: ANGELO GRAZIOSI
 !
 !   created   : Jun 26, 2023
-!   last edit : Jun 30, 2023
+!   last edit : Jul 01, 2023
 !
 !   Star Walk in 2D of NPOINTS
 !
@@ -67,7 +67,7 @@
 !
 !   rm -rf *.mod; \
 !     gfortran[-mp-X] -std=f2018 -O3 -Wall \
-!       [`sdl2-config --cflags`] -J ../modules \
+!       [`sdl2-config --cflags`] \
 !       ../basic-modules/{{kind,math}_consts,nicelabels}.f90 \
 !       $SDL2F90 SDL2_app.f90 star_walk_2d.f90 \
 !       $LIBS -o star_walk_2d$EXE; \
@@ -201,6 +201,7 @@ program star_walk_2d
   y_min = -y_max
 
   ! Initial positions in the square [x_min,x_max] x [y_min,y_max]
+  ! (Yes, x_max-x_min == side, we know...)
   do j = 1, npoints
      call random_number(f)
      associate (q => p(:,j))
@@ -215,6 +216,7 @@ program star_walk_2d
   y_max = x_max
   y_min = -y_max
 
+  ! (Yes, x_max-x_min == view_side etc., we know...)
   dpx = IMAX/(x_max-x_min)
   dpy = JMAX/(y_max-y_min)
 
