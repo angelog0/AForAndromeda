@@ -2,7 +2,7 @@
 ! Author: ANGELO GRAZIOSI
 !
 !   created   : Sep 12, 2014
-!   last edit : Sep 13, 2017
+!   last edit : Jul 01, 2023
 !
 !   The Everhart integrator module
 !   A simple module which tries to re-implement in modern Fortran the
@@ -239,7 +239,7 @@ contains
   end subroutine ra15_on
 
   subroutine ra15_off()
-    integer :: ierr
+    integer :: ierr = 0
 
     ! Closing DATA file
     if (save_data) close(data_unit)
