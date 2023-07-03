@@ -2,7 +2,7 @@
 ! Author: ANGELO GRAZIOSI
 !
 !   created   : Jun 26, 2023
-!   last edit : Jul 01, 2023
+!   last edit : Jul 03, 2023
 !
 !   Star Walk in 2D of NPOINTS
 !
@@ -18,6 +18,20 @@
 !
 !   The units are arbitrary.
 !
+!   If these units were UA and D (Day), for the SUN it would be
+!
+!     mu(SUN) = G*M(SUN) = k**2 = 2.95...E-4 UA**3/D**2
+!
+!   this means that G*M == 1 ==> M = M(SUN)/mu(SUN) ~ 3390*M(SUN).  If
+!   the step is 1, i.e. 1 UA, assuming s == 1 UA = (1/2)g*t**2, it
+!   would be t = sqrt(2/g). With 5000 points in a square of side 1000
+!   (UA), we would have sqrt(5000) in a side of 1000 (UA), i.e. about
+!   1000/sqrt(5000) ~ 14 UA between two near points, and this would
+!   give g = GM/r**2 ~ 1/14**2, i.e. t = sqrt(2/g) ~ sqrt(2*14**2) ~
+!   20 D. In this model 1 step (1 UA) is done in about 20 D.
+!
+!   Just a few divagations...
+!
 ! REFERENCES
 !
 !   https://towardsdatascience.com/random-walks-with-python-8420981bc4bc
@@ -26,9 +40,13 @@
 !
 ! SOME TEST RUN
 !
-!   ./star_walk_2d-static.out 1000 5000 50 -1
+!   ./star_walk_2d-static.out -1 5000 50 -1
 !
-!   Try also with VIEW_SIDE 25, 15, 10
+!   Try also with VIEW_SIDE 25, 15, 10 and/or SIDE 100, 1000..., i.e.
+!
+!   ./star_walk_2d-static.out -1 5000 1000 -1
+!
+! and let it run for more than 50000 steps (83610).
 !
 ! COMPUTING THE TRANSFORMATION FROM WC TO DC
 !
@@ -134,9 +152,8 @@
 program star_walk_2d
   use kind_consts, only: WP
 
-  use SDL2_app, only: QUIT_EVENT, &
-       clear_screen, close_graphics, draw_point, get_event, init_graphics, &
-       refresh, set_rgba_color, clear_viewport
+  use SDL2_app, only: clear_screen, close_graphics, draw_point, &
+       init_graphics, refresh, set_rgba_color, clear_viewport, quit
 
   implicit none
 
@@ -149,18 +166,18 @@ program star_walk_2d
 
   character(len=*), parameter :: FMT = '(*(g0,1x))'  !'(a,g0.7)'
 
-  integer :: nargs, ievent = -1000
+  integer :: nargs
   real(WP) :: args_val(NUMARGS)
   character(len=80) :: args
 
-  integer :: nsteps, npoints, i, j, ierr
+  integer :: nsout, npoints, istep, i, ierr
   real(WP) :: rms_d, f(2), side, view_side, mean_x, mean_y, sigma_x, sigma_y
   real(WP), allocatable :: p(:,:)
 
   nargs = command_argument_count()
 
   if (nargs /= NUMARGS) &
-       stop ': USAGE: ./star_walk_2d <NSTEPS> <NPOINTS> <SIDE> <VSIDE>'
+       stop ': USAGE: ./star_walk_2d <NSOUT> <NPOINTS> <SIDE> <VSIDE>'
 
   ! Reading the arguments
   do i = 1, nargs
@@ -168,13 +185,9 @@ program star_walk_2d
      read(args,*) args_val(i)
   end do
 
-  ! ARGS_VAL(1) is NSTEPS...
-  nsteps = nint(args_val(1))
-  if (nsteps < 1) nsteps = 1000
-
-  ! The rms displacement is sqrt(nsteps)
-  rms_d = nsteps
-  rms_d = sqrt(rms_d)
+  ! ARGS_VAL(1) is NSOUT...
+  nsout = nint(args_val(1))
+  if (nsout < 1) nsout = 100
 
   ! ARGS_VAL(2) is NPOINTS...
   npoints = nint(args_val(2))
@@ -187,7 +200,7 @@ program star_walk_2d
 
   ! ARGS_VAL(3) is SIDE...
   side = args_val(3)
-  if (side < 0) side = 6*rms_d
+  if (side < 0) side = 50
 
   ! ARGS_VAL(4) is VIEW_SIDE...
   view_side = args_val(4)
@@ -202,9 +215,9 @@ program star_walk_2d
 
   ! Initial positions in the square [x_min,x_max] x [y_min,y_max]
   ! (Yes, x_max-x_min == side, we know...)
-  do j = 1, npoints
+  do i = 1, npoints
      call random_number(f)
-     associate (q => p(:,j))
+     associate (q => p(:,i))
        q = x_min+(x_max-x_min)*f
      end associate
   end do
@@ -225,9 +238,9 @@ program star_walk_2d
   ! y = 0
 
   write(*,*)
-  write(*,FMT) 'Running with NSTEPS     : ', nsteps
+  write(*,FMT) 'Running with NSOUT      : ', nsout
   write(*,FMT) 'Running with NPOINTS    : ', npoints
-  write(*,FMT) 'Running with RMS_D      : ', rms_d
+  write(*,FMT) 'Running with DENSITY    : ', npoints/side**2
   write(*,FMT) 'Running with REGION SIDE: ', side
   write(*,FMT) 'Running with VIEW SIDE  : ', view_side
   write(*,*)
@@ -235,15 +248,18 @@ program star_walk_2d
   call init_graphics('The Star Walk in 2D', &
        width=SCREEN_WIDTH,height=SCREEN_HEIGHT)
 
-  do i = 1, nsteps
+  istep = 0
+  do while (.not. quit())
+     istep = istep+1
+
      call clear_screen()
 
      ! YELLOW: we have to set the color after calling CLEAR_SCREEN()
      ! because... CLEAR_SCREEN() IS TOO PRIMITIVE!!!
      call set_rgba_color(255,255,0)
 
-     do j = 1, npoints
-        associate (q => p(:,j))
+     do i = 1, npoints
+        associate (q => p(:,i))
           call field(q,f)
           f = f/norm2(f)
 
@@ -262,8 +278,19 @@ program star_walk_2d
 
      call refresh()
 
-     if (mod(i,100) == 0) write(*,FMT) 'CURRENT STEP            : ', i
+     if (mod(istep,nsout) == 0) &
+          write(*,FMT) 'CURRENT STEP            : ', istep
   end do
+
+  associate (nsteps => istep)
+    ! The rms displacement is sqrt(nsteps)
+    rms_d = nsteps
+    rms_d = sqrt(rms_d)
+
+    write(*,*)
+    write(*,FMT) 'Executed with NSTEPS    : ', nsteps
+    write(*,FMT) 'Executed with RMS_D     : ', rms_d
+  end associate
 
   ! Computing mean and sigma for final cluster(s)
   ! See: https://www.programming-idioms.org/idiom/203/calculate-mean-and-standard-deviation/3468/fortran
@@ -294,11 +321,6 @@ program star_walk_2d
     write(*,FMT) 'FINAL CLUSTER(S) SIGM-R : ', sigma_r
     write(*,*)
   end associate
-
-  do while (ievent /= QUIT_EVENT)
-
-     ievent = get_event()
-  end do
 
   call close_graphics()
 
