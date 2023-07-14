@@ -2,7 +2,7 @@
 ! Author: Angelo Graziosi
 !
 !   created   : Mar 10, 2006
-!   last edit : Jul 06, 2016
+!   last edit : Jul 14, 2023
 !
 !   Useful GET data routines module
 !
@@ -19,7 +19,8 @@ module getdata
   character(len=MAXLEN) :: buf
 
   interface get
-     module procedure get_string, get_integer, get_real_wp, get_complex_wp
+     module procedure get_string, get_integer, get_real_wp, get_complex_wp, &
+          get_logical
   end interface
 
   public :: get
@@ -74,4 +75,16 @@ contains
     read(buf,*,err=10,end=10) x
 10  continue
   end subroutine get_complex_wp
+
+  subroutine get_logical(msg,x)
+    character(len=*), intent(in) :: msg
+    logical, intent(inout) :: x
+
+    buf = ''
+    write(ERROR_UNIT,*) trim(msg),x
+    write(ERROR_UNIT,'(A)',advance='NO') 'New value: '
+    read(*,'(A)') buf
+    read(buf,*,err=10,end=10) x
+10  continue
+  end subroutine get_logical
 end module getdata
