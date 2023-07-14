@@ -168,7 +168,7 @@
 !   is from CMD or Explorer. From the MSYS2/MINGW64 shell one should
 !   use:
 !
-!     open poisson2D_solver$EXE
+!     open heat1D_solver$EXE
 !
 !   being:
 !
