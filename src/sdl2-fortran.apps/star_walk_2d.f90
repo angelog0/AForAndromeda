@@ -2,7 +2,7 @@
 ! Author: ANGELO GRAZIOSI
 !
 !   created   : Jun 26, 2023
-!   last edit : Jul 03, 2023
+!   last edit : Jul 15, 2023
 !
 !   Star Walk in 2D of NPOINTS
 !
@@ -36,7 +36,7 @@
 !
 !   https://towardsdatascience.com/random-walks-with-python-8420981bc4bc
 !   S. Chandrashekhar Stochastic Problems in Physics and Astronomy,
-!   Rev. Mod. Phys. 15, 1 – Published 1 January 1943
+!   Rev. Mod. Phys. 15, 1 -- Published 1 January 1943
 !
 ! SOME TEST RUN
 !
@@ -140,7 +140,7 @@
 !   is from CMD or Explorer. From the MSYS2/MINGW64 shell one should
 !   use:
 !
-!     open star_walk_2d$EXE NSTEPS
+!     open PROGNAME
 !
 !   being:
 !
