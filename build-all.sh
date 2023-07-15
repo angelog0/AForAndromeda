@@ -292,6 +292,21 @@ if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
     echo "done."
 fi
 
+program_name="flux_stream"
+if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
+    echo -n "Building ${program_name^^} ... "
+    rm -rf *.mod
+    ${FC} -std=f2018 -O3 -Wall \
+          ${BMODS_DIR}/{{kind,math}_consts,additional_functions,ft_timer_m,utilities,getdata,nicelabels,contour_plots}.f90 ${SDL2F90} \
+          ../../fparser-fortran/fparser_cd.f90 ../SDL2_app.f90 \
+          ${program_name}.f90 ${LIBS} \
+          -L ../../fparser-fortran -lFParser -lstdc++ \
+          -o ${program_name}${EXE}
+    rm -rf *.mod
+    mv ${program_name}${EXE} "${BIN_DIR}"
+    echo "done."
+fi
+
 cd "${NBODY_DIR}"
 
 program_name="calc_orbits"
