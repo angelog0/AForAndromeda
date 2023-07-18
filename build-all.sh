@@ -313,7 +313,7 @@ program_name="double_pendulum"
 if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
     echo -n "Building ${program_name^^} ... "
     rm -rf *.mod
-    ${FC} -std=f2018 -O3 -Wall \
+    ${FC} -std=f2018 -O3 -Wall -Wno-unused-dummy-argument \
           ${BMODS_DIR}/{{kind,math}_consts,getdata,nicelabels}.f90 \
           ${OMODS_DIR}/{everhart,ode}_integrator.f90 \
           ${SDL2F90} ../SDL2_app.f90 \
