@@ -2,10 +2,23 @@
 ! Author: ANGELO GRAZIOSI
 !
 !   created   : Jul 18, 2019
-!   last edit : Jan 28, 2023
+!   last edit : Jul 17, 2023
 !
 !   Simple module for ODE integration, being DY/DX = F(X,Y)
 !   the ODE system.
+!
+!   The CALC() routines, for variable step algorithms, could not
+!   return if the H step is too small (<~ 0.0075). This could cause
+!   that the program hangs or takes a long long time to start
+!   plotting. Indeed the STEP() routing could try to decrease the step
+!   to reach a give precision, and this could never be reached...
+!   CERNLIB manual says (D201-2):
+!
+!     For well-conditioned systems of equations any reasonable value
+!     of the initial step length H0 may be chosen. For ill-conditioned
+!     systems, the initial value of H0 maybe important, and tests with
+!     different values are advised. An inappropriate choice may lead
+!     to wrong results in such cases.
 !
 
 module ode_integrator
@@ -48,6 +61,10 @@ module ode_integrator
        real(WP), intent(in) :: x0, x1
        real(WP), intent(inout) :: y(:), h0
      end subroutine calc_fcn
+
+     function quit_fcn() result(r)
+       logical :: r
+     end function quit_fcn
   end interface
 
   integer, parameter, public :: ID_RK4 = 1, ID_GBS = 2, ID_RKM = 3, ID_R15 = 4
@@ -58,6 +75,7 @@ module ode_integrator
 
   procedure(field_fcn), pointer :: field => null()
   procedure(display_fcn), pointer :: display => null()
+  procedure(quit_fcn), pointer :: quit => null()
   procedure(step_fcn), pointer :: step => null()
   procedure(calc_fcn), pointer :: calc => null()
 
@@ -74,7 +92,7 @@ module ode_integrator
 
 contains
 
-  subroutine ode_on(neq,sub,display_data,method,data_file,accuracy)
+  subroutine ode_on(neq,sub,display_data,method,data_file,accuracy,stop_run)
     use everhart_integrator, only:  ra15_on
     integer, intent(in) :: neq
     procedure(field_fcn) :: sub
@@ -82,6 +100,7 @@ contains
     integer, intent(in), optional :: method
     character(len=*), intent(in), optional :: data_file
     integer, intent(in), optional :: accuracy
+    procedure(quit_fcn), optional :: stop_run
 
     real(WP), parameter :: MACHEPS = epsilon(1.0_WP)
     real(WP), parameter :: EPS_MIN = 1000*MACHEPS
@@ -142,7 +161,17 @@ contains
     ! has a wrong value. This is the reason to use ID_METHOD from here on
     !
 
-    if (present(display_data)) display => display_data
+    if (present(display_data)) then
+       display => display_data
+    else
+       display => display_default
+    end if
+
+    if (present(stop_run)) then
+       quit => stop_run
+    else
+       quit => quit_default
+    end if
 
     if (present(accuracy)) ll = abs(accuracy)
 
@@ -214,8 +243,10 @@ contains
        call ra15_off()
     end if
 
-    if (associated(display)) nullify(display)
+    if (associated(step)) nullify(calc)
     if (associated(step)) nullify(step)
+    if (associated(quit)) nullify(quit)
+    if (associated(display)) nullify(display)
     if (associated(field)) nullify(field)
 
     ! Reset
@@ -233,9 +264,6 @@ contains
     real(WP) :: x, xp, y(n), h
     logical :: last
 
-    if (.not. associated(display)) &
-         stop ': DISPLAY not associated (ODE_INTEGRATE).'
-
     last = .false.
     x = x0
     y = y0
@@ -244,6 +272,13 @@ contains
        call display(x,y)
 
        if (last) exit
+
+       if (quit()) then
+          write(*,*)
+          write(*,*) 'Stopped at X : ', x
+          write(*,*)
+          exit
+       end if
 
        xp = x+h
 
@@ -256,6 +291,18 @@ contains
        call step(h,x,y)
     end do
   end subroutine ode_integrate
+
+  subroutine display_default(x,y)
+    real(WP), intent(in) :: x, y(:)
+
+    write(*,*) x, y(:)
+  end subroutine display_default
+
+  ! DEFAULT: not quit
+  function quit_default() result(r)
+    logical :: r
+    r = .false.
+  end function quit_default
 
   subroutine rk4_step(h,x,y)
     real(WP), intent(in) :: h
@@ -413,6 +460,11 @@ contains
           if (abs(hh) < deltax) return
           lfn = .true.
        end if
+
+       ! We should extract GBS_STEP() from here... It prints
+       ! X0, X0+H, X0+2H, etc.
+       !print *, 'X = ', x
+
        call field(x,y,w(1:n,27))
        lbh = .false.
 
@@ -445,7 +497,7 @@ contains
              if (j > 6) then
                 l = 6
                 w(1,35) = 64
-                fc =C6*fc
+                fc = C6*fc
              else
                 l = j
                 w(1,l+29) = m*m
@@ -649,7 +701,8 @@ contains
              h1 = R2*hh
              if (abs(h1) < deltax) then
                 write(*,*)
-                write(*,*) 'RKM_CALC : TOO HIGH ACCURACY REQUIRED NEAR  x = ', x
+                write(*,*) &
+                     'RKM_CALC : TOO HIGH ACCURACY REQUIRED NEAR  x = ', x
                 write(*,*)
                 return ! or STOP
              end if
