@@ -323,6 +323,22 @@ if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
     echo "done."
 fi
 
+cd ../lorenz
+
+program_name="lorenz_attractor"
+if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
+    echo -n "Building ${program_name^^} ... "
+    rm -rf *.mod
+    ${FC} -std=f2018 -O3 -Wall -Wno-unused-dummy-argument \
+          ${BMODS_DIR}/{{kind,math}_consts,getdata,nicelabels}.f90 \
+          ${OMODS_DIR}/{everhart,ode}_integrator.f90 \
+          ${SDL2F90} ../SDL2_{app,shading}.f90 \
+          ${program_name}.f90 ${LIBS} -o ${program_name}${EXE}
+    rm -rf *.mod
+    mv ${program_name}${EXE} "${BIN_DIR}"
+    echo "done."
+fi
+
 cd "${NBODY_DIR}"
 
 program_name="calc_orbits"
