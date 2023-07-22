@@ -235,8 +235,7 @@ contains
 
   subroutine read_cards()
 
-    ! Special treatment for GitHub
-    character(len=*), parameter :: CARDSFNAME = '../close_encounters.cards'
+    character(len=*), parameter :: CARDSFNAME = 'close_encounters.cards'
 
     integer :: i, ip1, ip2, cards_unit, io_status
     real(WP) :: mu = 0
