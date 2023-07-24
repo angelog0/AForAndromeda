@@ -2,7 +2,7 @@
 ! Author: ANGELO GRAZIOSI
 !
 !   created   : Jun 26, 2023
-!   last edit : Jul 15, 2023
+!   last edit : Jul 24, 2023
 !
 !   Star Walk in 2D of NPOINTS
 !
@@ -32,11 +32,25 @@
 !
 !   Just a few divagations...
 !
+! MORE ABOUT THE UNITS
+!
+!   We can think of the units as being chosen as in ref. 3. Indeed our
+!   equations of motion are the same. We have here all the stars with
+!   the same unit mass: M = 1. So if M = 1 g and L = 1 cm, T = 1.08 h;
+!   if M = 1 MSUN and L = 1 pc, T = 1.43E7 yr, and so on.
+!
 ! REFERENCES
 !
-!   https://towardsdatascience.com/random-walks-with-python-8420981bc4bc
-!   S. Chandrashekhar Stochastic Problems in Physics and Astronomy,
-!   Rev. Mod. Phys. 15, 1 -- Published 1 January 1943
+!   1. https://towardsdatascience.com/random-walks-with-python-8420981bc4bc
+!
+!   2. S. Chandrashekhar Stochastic Problems in Physics and Astronomy,
+!      Rev. Mod. Phys. 15, 1 -- Published 1 January 1943
+!
+!   3. V. Szebehely and C. F. Peters, Complete Solution of a General
+!      Problem of Three Bodies, The Astronomical Journal, vol. 72,
+!      p. 876 (1967)
+!      http://adsabs.harvard.edu/full/1967AJ.....72..876S
+!      SEE also the program THREE_BODIES.F90
 !
 ! SOME TEST RUN
 !
@@ -77,7 +91,7 @@
 !
 !   are the pixel per unit in X and Y
 !
-! HOW TO BUILD THE APP
+! HOW TO BUILD THE APP (MSYS2/MINGW64, GNU/Linux, macOS)
 !
 !   cd sdl2-fortran.apps
 !
