@@ -408,7 +408,7 @@ if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
     rm -rf *.mod
     ${FC} -std=f2018 -O3 -march=native -funroll-loops -Wall \
           -Wno-unused-dummy-argument \
-          ${BMODS_DIR}/{{kind,math}_consts,ft_timer,getdata,nicelabels,camera_view_m}.f90 \
+          ${BMODS_DIR}/{{kind,math}_consts,ft_timer_m,getdata,nicelabels,camera_view_m}.f90 \
           ${OMODS_DIR}/{everhart,ode}_integrator.f90 \
           ${SDL2F90} ../../sdl2-fortran.apps/SDL2_{app,shading}.f90 \
           ${program_name}.f90 ${LIBS} -o ${program_name}${EXE}
