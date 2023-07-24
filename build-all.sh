@@ -400,6 +400,23 @@ if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
     echo "done."
 fi
 
+cd ../three_bodies
+
+program_name="three_bodies"
+if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
+    echo -n "Building ${program_name^^} ... "
+    rm -rf *.mod
+    ${FC} -std=f2018 -O3 -march=native -funroll-loops -Wall \
+          -Wno-unused-dummy-argument \
+          ${BMODS_DIR}/{{kind,math}_consts,ft_timer,getdata,nicelabels,camera_view_m}.f90 \
+          ${OMODS_DIR}/{everhart,ode}_integrator.f90 \
+          ${SDL2F90} ../../sdl2-fortran.apps/SDL2_{app,shading}.f90 \
+          ${program_name}.f90 ${LIBS} -o ${program_name}${EXE}
+    rm -rf *.mod
+    mv ${program_name}${EXE} "${BIN_DIR}"
+    echo "done."
+fi
+
 cd "${ODETS_DIR}"
 
 program_name="Euler"
