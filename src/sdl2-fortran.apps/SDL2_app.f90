@@ -2,23 +2,23 @@
 ! Author: ANGELO GRAZIOSI
 !
 !   created   : Sep 08, 2018
-!   last edit : Nov 03, 2019
+!   last edit : Aug 07, 2023
 !
 !   Module to create SDL2 Fortran applications in DC or WC
 !
-!
 
 module SDL2_app
-  use, intrinsic :: iso_c_binding, only: C_NULL_CHAR, C_PTR, &
+  use, intrinsic :: iso_c_binding, only: C_NULL_CHAR, C_PTR, C_NULL_PTR, &
        c_associated
-  use kind_consts, only: WP
-  use math_consts, only: ZERO => Z0, ONE => Z1
-  use sdl2, only: SDL_INIT_VIDEO, SDL_RENDERER_SOFTWARE, SDL_WINDOW_SHOWN, &
-       SDL_WINDOWPOS_UNDEFINED, &
+  use :: kind_consts, only: WP
+  use :: math_consts, only: ZERO => Z0, ONE => Z1
+  use :: sdl2, only: SDL_INIT_VIDEO, SDL_RENDERER_SOFTWARE, &
+       SDL_RENDERER_ACCELERATED, SDL_RENDERER_TARGETTEXTURE, &
+       SDL_WINDOW_SHOWN, SDL_WINDOWPOS_UNDEFINED, &
        SDL_QUITEVENT, SDL_KEYDOWN, SDLK_ESCAPE, SDLK_q, &
        SDL_KEYDOWN, SDL_MOUSEBUTTONDOWN, SDL_MOUSEWHEEL, &
        SDL_WINDOWEVENT, SDL_WINDOWEVENT_CLOSE, SDL_WINDOWEVENT_EXPOSED, &
-       SDL_WINDOWEVENT_SHOWN, &
+       SDL_WINDOWEVENT_SHOWN, SDL_ALPHA_OPAQUE, &
        sdl_event, sdl_point, sdl_rect, &
        sdl_create_renderer, sdl_create_window, &
        sdl_destroy_renderer, sdl_destroy_window, &
@@ -82,9 +82,19 @@ module SDL2_app
      module procedure draw_circle_DC, draw_circle_WC
   end interface draw_circle
 
+  interface draw_ellipse
+     module procedure draw_ellipse_DC, draw_ellipse_WC, &
+          draw_ellipse_DC_1, draw_ellipse_WC_1
+  end interface draw_ellipse
+
   interface fill_circle
      module procedure fill_circle_DC, fill_circle_WC
   end interface fill_circle
+
+  interface fill_ellipse
+     module procedure fill_ellipse_DC, fill_ellipse_WC, &
+          fill_ellipse_DC_1, fill_ellipse_WC_1
+  end interface fill_ellipse
 
   interface draw_line
      module procedure draw_line_DC, draw_line_WC
@@ -110,11 +120,11 @@ module SDL2_app
   public :: select_map, set_map_viewport, set_map_window
 
   public :: clear_screen, clear_viewport, close_graphics, draw_arc, &
-       draw_circle, draw_line, draw_lines, draw_point, draw_points, &
-       draw_rect, draw_rects, fill_circle, fill_rect, fill_rects, get_event, &
-       get_mouse_x, get_mouse_y, init_graphics, quit, refresh, &
-       set_rgba_color, set_viewport, get_viewport, draw_axis_x, draw_axis_y, &
-       draw_axes
+       draw_circle, draw_ellipse, draw_line, draw_lines, draw_point, &
+       draw_points, draw_rect, draw_rects, fill_circle, fill_ellipse, &
+       fill_rect, fill_rects, get_event, get_mouse_x, get_mouse_y, &
+       init_graphics, quit, refresh, set_rgba_color, set_viewport, &
+       get_viewport, draw_axis_x, draw_axis_y, draw_axes
 
 contains
 
@@ -281,7 +291,7 @@ contains
     rc = sdl_init(SDL_INIT_VIDEO)
 
     if (rc < 0) then
-       write(*,*) 'SDL Error: ', sdl_get_error()
+       write(*,*) 'SDL Error (SDL_INIT_VIDEO): ', sdl_get_error()
        stop
     end if
 
@@ -345,13 +355,22 @@ contains
     window = sdl_create_window(title//C_NULL_CHAR,x,y,w,h,f)
 
     if (.not. c_associated(window)) then
-       write(*,*) 'SDL Error: ', sdl_get_error()
+       write(*,*) 'SDL Error (WINDOW): ', sdl_get_error()
        stop
     end if
 
-    ! Create renderer.
+    ! Create renderer. See https://wiki.libsdl.org/SDL2/SDL_RendererFlags
     !renderer = sdl_create_renderer(window,-1,0)
-    renderer = sdl_create_renderer(window,-1,SDL_RENDERER_SOFTWARE)
+    !
+    renderer = sdl_create_renderer(window,-1, &
+         ior(SDL_RENDERER_ACCELERATED, SDL_RENDERER_TARGETTEXTURE))
+    !
+    !renderer = sdl_create_renderer(window,-1,SDL_RENDERER_SOFTWARE)
+
+    if (.not. c_associated(renderer)) then
+       write(*,*) 'SDL Error (RENDERER): ', sdl_get_error()
+       stop
+    end if
 
     graphics_on = .true.
     call select_map(0)
@@ -365,6 +384,8 @@ contains
     ! Quit gracefully.
     call sdl_destroy_renderer(renderer)
     call sdl_destroy_window(window)
+    window = C_NULL_PTR
+    renderer = C_NULL_PTR
 
     call sdl_quit()
 
@@ -372,20 +393,18 @@ contains
     print *, 'All done'
   end subroutine close_graphics
 
-  subroutine set_rgba_color(r,g,b,alpha)
-    integer, intent(in) :: r, g, b
+  subroutine set_rgba_color(red,green,blue,alpha)
+    integer, intent(in) :: red, green, blue
     integer, intent(in), optional :: alpha
 
-    integer :: a
-
     if (present(alpha)) then
-       a = alpha
+       rc = sdl_set_render_draw_color(renderer,uint8(red),uint8(green), &
+            uint8(blue),uint8(alpha))
     else
-       a = 255
+       ! SDL_ALPHA_OPAQUE should be 255
+       rc = sdl_set_render_draw_color(renderer,uint8(red),uint8(green), &
+            uint8(blue),uint8(SDL_ALPHA_OPAQUE))
     end if
-
-    rc = sdl_set_render_draw_color(renderer,uint8(r),uint8(g),uint8(b), &
-         uint8(a))
   end subroutine set_rgba_color
 
   subroutine get_viewport(rect)
@@ -761,16 +780,108 @@ contains
   subroutine draw_circle_WC(x0,y0,radius)
     real(WP), intent(in) :: x0, y0, radius
 
-    ! We do not consider the aspect ratio, i.e. we suppose the same
-    ! scale on both the axes
     !
-    ! radius_in_pixel = XS(radius)-XS(0) =
+    ! radius_X__in_pixel = XS(radius)-XS(0) =
     ! m(1)*radius+m(2)-(m(1)*0+m(2)) = m(1)*radius+m(2)-m(2) =
     ! m(1)*radius
     !
-    call draw_circle_DC(nint(m(1)*x0+m(2)),nint(m(3)*y0+m(4)), &
-         nint(m(1)*radius))
+    ! radius_Y__in_pixel = (-m(3)*radius)
+    !
+    ! BUT M(3) is NEGATIVE, given that YS is toward the bottom! So we
+    ! have to use (-M(3)) (or ABS(M(3))) when converting UNITS in
+    ! PIXELS otherwise we would have a negative number of pixels.
+    !
+    call draw_ellipse_DC(nint(m(1)*x0+m(2)),nint(m(3)*y0+m(4)), &
+         nint(m(1)*radius),nint((-m(3))*radius))
   end subroutine draw_circle_WC
+
+  ! http://members.chello.at/~easyfilter/bresenham.html
+  ! http://members.chello.at/~easyfilter/bresenham.c
+  subroutine draw_ellipse_DC(x0,y0,a,b)
+    integer, intent(in) :: x0, y0, a, b
+
+    integer(8) :: x, y, e2, dx, dy, err, a8, b8
+
+    a8 = a
+    b8 = b
+
+    ! II. quadrant from bottom left to top right
+    x = -a8
+    y = 0
+
+    ! error increment
+    e2 = b8
+    dx = (1+2*x)*e2*e2
+
+    ! error of 1.step
+    dy = x*x
+    err = dx+dy
+
+    do
+       rc = sdl_render_draw_point(renderer,int(x0-x),int(y0+y))
+       rc = sdl_render_draw_point(renderer,int(x0+x),int(y0+y))
+       rc = sdl_render_draw_point(renderer,int(x0+x),int(y0-y))
+       rc = sdl_render_draw_point(renderer,int(x0-x),int(y0-y))
+
+       e2 = 2*err
+
+       if (e2 >= dx) then
+          x = x+1
+          dx = dx+2*b8*b8
+          err = err+dx
+       end if
+
+       if (e2 <= dy) then
+          y = y+1
+          dy = dy+2*a8*a8
+          err = err+dy
+       end if
+
+       if (x > 0) exit
+    end do
+  end subroutine draw_ellipse_DC
+
+  subroutine draw_ellipse_WC(x0,y0,a,b)
+    real(WP), intent(in) :: x0, y0, a, b
+
+    ! m(1) is in pixel/unit, and so m(3). Indeed
+    !
+    ! a_in_pixel = XS(a)-XS(0) =
+    ! m(1)*a+m(2)-(m(1)*0+m(2)) = m(1)*a+m(2)-m(2) =
+    ! m(1)*a
+    !
+    ! BUT M(3) is NEGATIVE, given that YS is toward the bottom! So we
+    ! have to use (-M(3)) (or ABS(M(3))) when converting UNITS in
+    ! PIXELS otherwise we would have a negative number of pixels.
+    !
+    call draw_ellipse_DC(nint(m(1)*x0+m(2)),nint(m(3)*y0+m(4)), &
+         nint(m(1)*a),nint((-m(3))*b))
+  end subroutine draw_ellipse_WC
+
+  subroutine draw_ellipse_DC_1(x0,y0,a,b,color)
+    integer, intent(in) :: x0, y0, a, b, color
+
+    call set_rgba_color(ibits(color,0,8),ibits(color,8,8),ibits(color,16,8), &
+         ibits(color,24,8))
+    call draw_ellipse_DC(x0,y0,a,b)
+  end subroutine draw_ellipse_DC_1
+
+  subroutine draw_ellipse_WC_1(x0,y0,a,b,color)
+    real(WP), intent(in) :: x0, y0, a, b
+    integer, intent(in) :: color
+
+    ! m(1) is in pixel/unit, and so m(3). Indeed
+    !
+    ! a_in_pixel = XS(a)-XS(0) =
+    ! m(1)*a+m(2)-(m(1)*0+m(2)) = m(1)*a+m(2)-m(2) =
+    ! m(1)*a
+    !
+    ! BUT M(3) is NEGATIVE, given that YS is toward the bottom! So we
+    ! have to use (-M(3)) (or ABS(M(3)))
+    !
+    call draw_ellipse_DC_1(nint(m(1)*x0+m(2)),nint(m(3)*y0+m(4)), &
+         nint(m(1)*a),nint((-m(3))*b),color)
+  end subroutine draw_ellipse_WC_1
 
   !
   ! BRESENHAM MIDPOINT CIRCLE ALGORITHM
@@ -830,6 +941,95 @@ contains
     call fill_circle_DC(nint(m(1)*x0+m(2)),nint(m(3)*y0+m(4)), &
          nint(m(1)*radius))
   end subroutine fill_circle_WC
+
+  ! http://members.chello.at/~easyfilter/bresenham.html
+  ! http://members.chello.at/~easyfilter/bresenham.c
+  subroutine fill_ellipse_DC(x0,y0,a,b)
+    integer, intent(in) :: x0, y0, a, b
+
+    integer(8) :: x, y, e2, dx, dy, err, a8, b8
+
+    a8 = a
+    b8 = b
+
+    ! II. quadrant from bottom left to top right
+    x = -a8
+    y = 0
+
+    ! error increment
+    e2 = b8
+    dx = (1+2*x)*e2*e2
+
+    ! error of 1.step
+    dy = x*x
+    err = dx+dy
+
+    do
+       rc = sdl_render_draw_line(renderer,int(x0-x),int(y0+y), &
+            int(x0+x),int(y0+y))
+       rc = sdl_render_draw_line(renderer,int(x0-x),int(y0-y), &
+            int(x0+x),int(y0-y))
+
+       e2 = 2*err
+
+       if (e2 >= dx) then
+          x = x+1
+          dx = dx+2*b8*b8
+          err = err+dx
+       end if
+
+       if (e2 <= dy) then
+          y = y+1
+          dy = dy+2*a8*a8
+          err = err+dy
+       end if
+
+       if (x > 0) exit
+    end do
+  end subroutine fill_ellipse_DC
+
+  subroutine fill_ellipse_WC(x0,y0,a,b)
+    real(WP), intent(in) :: x0, y0, a, b
+
+    !
+    ! radius_X__in_pixel = XS(radius)-XS(0) =
+    ! m(1)*radius+m(2)-(m(1)*0+m(2)) = m(1)*radius+m(2)-m(2) =
+    ! m(1)*radius
+    !
+    ! radius_Y__in_pixel = (-m(3)*radius)
+    !
+    ! BUT M(3) is NEGATIVE, given that YS is toward the bottom! So we
+    ! have to use (-M(3)) (or ABS(M(3))) when converting UNITS in
+    ! PIXELS otherwise we would have a negative number of pixels.
+    !
+    call fill_ellipse_DC(nint(m(1)*x0+m(2)),nint(m(3)*y0+m(4)), &
+         nint(m(1)*a),nint((-m(3))*b))
+  end subroutine fill_ellipse_WC
+
+  subroutine fill_ellipse_DC_1(x0,y0,a,b,color)
+    integer, intent(in) :: x0, y0, a, b, color
+
+    call set_rgba_color(ibits(color,0,8),ibits(color,8,8),ibits(color,16,8), &
+         ibits(color,24,8))
+    call fill_ellipse_DC(x0,y0,a,b)
+  end subroutine fill_ellipse_DC_1
+
+  subroutine fill_ellipse_WC_1(x0,y0,a,b,color)
+    real(WP), intent(in) :: x0, y0, a, b
+    integer, intent(in) :: color
+
+    ! m(1) is in pixel/unit, and so m(3). Indeed
+    !
+    ! a_in_pixel = XS(a)-XS(0) =
+    ! m(1)*a+m(2)-(m(1)*0+m(2)) = m(1)*a+m(2)-m(2) =
+    ! m(1)*a
+    !
+    ! BUT M(3) is NEGATIVE, given that YS is toward the bottom! So we
+    ! have to use (-M(3)) (or ABS(M(3)))
+    !
+    call fill_ellipse_DC_1(nint(m(1)*x0+m(2)),nint(m(3)*y0+m(4)), &
+         nint(m(1)*a),nint((-m(3))*b),color)
+  end subroutine fill_ellipse_WC_1
 
   subroutine draw_line_DC(x1,y1,x2,y2)
     integer, intent(in) :: x1, y1, x2, y2
@@ -1168,5 +1368,4 @@ contains
        call draw_axis_y()
     end if
   end subroutine draw_axes
-
 end module SDL2_app
