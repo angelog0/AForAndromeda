@@ -2,11 +2,13 @@
 ! Author: Angelo Graziosi
 !
 !   created   : Feb 10, 2014
-!   last edit : Jul 28, 2023
+!   last edit : Aug 08, 2023
 !
 !   Bouncing ball: a remake with SDL2 of BOUNCE_PLUS, an app base on
 !   WIN32-FORTRAN interface, and BALLS_SIM[ULATION], apps based on
 !   WBGI-FORTRAN interface.
+!
+!   This program is used also to test some primitive of SDL2_app module.
 !
 ! DESCRIPTION
 !
@@ -21,11 +23,12 @@
 !   git clone https://github.com/interkosmos/fortran-sdl2.git
 !
 !   rm -rf *.mod; \
-!     gfortran[-mp-X] -std=f2018 -O3 -Wall \
+!     gfortran[-mp-X] [-march=native] -Wall -std=f2018 \
+!       [-fmax-errors=1] [-I ...] -O3 \
 !       [`sdl2-config --cflags`] \
-!       $B/basic-modules/{{kind,math}_consts,getdata,nicelabels}.f90 \
+!       ../basic-modules/{{kind,math}_consts,getdata,nicelabels}.f90 \
 !       $SDL2F90 SDL2_{app,shading}.f90 \
-!       bouncing.f90 $LIBS -o bouncing$EXE; \
+!       bouncing.f90 -o bouncing$EXE $LIBS; \
 !   rm -rf *.mod
 !
 !   ./bouncing$EXE
@@ -39,8 +42,6 @@
 !     EXE = -$MSYSTEM (or EMPTY)
 !
 !   and (all platform):
-!
-!     B = ..
 !
 !     SDL2F90 = fortran-sdl2/src/{c_util,sdl2/{sdl2_stdinc,sdl2_audio,\
 !       sdl2_blendmode,sdl2_cpuinfo,sdl2_gamecontroller,sdl2_error,\
@@ -328,7 +329,14 @@ contains
   end subroutine paint_screen
 
   subroutine run()
-    use SDL2_app, only: init_graphics, close_graphics, QUIT_EVENT, get_event
+    use SDL2_app, only: init_graphics, close_graphics, QUIT_EVENT, &
+         get_event, set_rgba_color, draw_ellipse, fill_ellipse, refresh
+
+    integer, parameter :: RED = int(z'FF0000FF')
+    integer, parameter :: GREEN = int(z'FF00FF00')
+    integer, parameter :: BLUE = int(z'FFFF0000')
+    integer, parameter :: MAGENTA = ior(RED,BLUE)
+    integer, parameter :: CYAN = ior(GREEN,BLUE)
 
     integer :: ievent = -1000
 
@@ -342,14 +350,37 @@ contains
          WIDTH=screen_width,HEIGHT=screen_height, &
          X1=x_min,X2=x_max,Y1=y_min,Y2=y_max)
 
-    ! We need to reset IEVENT if we want to restart the run
-    ievent = -1000
-    do while (ievent /= QUIT_EVENT)
+    ! Testing DRAW_ELLIPSE()
+    call set_rgba_color(255,255,0)
+    call draw_ellipse(screen_width/2,screen_height/2,250,100)
+    call draw_ellipse(screen_width/2,screen_height/2,100,250,RED)
+    call draw_ellipse(screen_width/2,screen_height/2,250,250,BLUE)
+    call set_rgba_color(0,255,0)
+    call draw_ellipse(300.0_WP,-200.0_WP,50.0_WP,25.0_WP)
+    call draw_ellipse(-300.0_WP,-200.0_WP,50.0_WP,25.0_WP,MAGENTA)
+    call set_rgba_color(0,255,255)
+    call fill_ellipse(300,200,100,50)
+    call fill_ellipse(0.0_WP,300.0_WP,50.0_WP,25.0_WP)
+    call draw_ellipse(0.0_WP,300.0_WP,50.0_WP,25.0_WP,MAGENTA)
+    call draw_ellipse(300,200,100,50)
+    call fill_ellipse(900,200,100,50,CYAN)
+    call draw_ellipse(900,200,100,50,MAGENTA)
+    call refresh()
 
-       call paint_screen()
+    ievent = get_event()
 
-       ievent = get_event()
-    end do
+    if (ievent /= QUIT_EVENT) then
+
+       ! We need to reset IEVENT if we want to restart the run
+       ievent = -1000
+       do while (ievent /= QUIT_EVENT)
+
+          call paint_screen()
+
+          ievent = get_event()
+       end do
+
+    end if
 
     call close_graphics()
 
@@ -511,6 +542,10 @@ end module bouncing_lib
 
 program bouncing
   use bouncing_lib
+
+  ! Initialize the rnd generator (maybe we do not need this anymore in
+  ! recent version of GFortran)
+  call random_init(.false., .false.)
 
   call app_menu()
 end program bouncing
