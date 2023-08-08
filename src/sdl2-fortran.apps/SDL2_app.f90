@@ -2,7 +2,7 @@
 ! Author: ANGELO GRAZIOSI
 !
 !   created   : Sep 08, 2018
-!   last edit : Aug 07, 2023
+!   last edit : Aug 08, 2023
 !
 !   Module to create SDL2 Fortran applications in DC or WC
 !
@@ -82,6 +82,10 @@ module SDL2_app
      module procedure draw_circle_DC, draw_circle_WC
   end interface draw_circle
 
+  interface draw_elliptic_arc
+     module procedure draw_elliptic_arc_DC, draw_elliptic_arc_WC
+  end interface draw_elliptic_arc
+
   interface draw_ellipse
      module procedure draw_ellipse_DC, draw_ellipse_WC, &
           draw_ellipse_DC_1, draw_ellipse_WC_1
@@ -120,9 +124,10 @@ module SDL2_app
   public :: select_map, set_map_viewport, set_map_window
 
   public :: clear_screen, clear_viewport, close_graphics, draw_arc, &
-       draw_circle, draw_ellipse, draw_line, draw_lines, draw_point, &
-       draw_points, draw_rect, draw_rects, fill_circle, fill_ellipse, &
-       fill_rect, fill_rects, get_event, get_mouse_x, get_mouse_y, &
+       draw_circle, draw_elliptic_arc, draw_ellipse, draw_line, draw_lines, &
+       draw_point, draw_points, draw_rect, draw_rects, &
+       fill_circle, fill_ellipse, fill_rect, fill_rects, &
+       get_event, get_mouse_x, get_mouse_y, &
        init_graphics, quit, refresh, set_rgba_color, set_viewport, &
        get_viewport, draw_axis_x, draw_axis_y, draw_axes
 
@@ -558,7 +563,7 @@ contains
   !
   subroutine draw_arc_DC(x0,y0,radius,start_angle,end_angle)
     ! START_ANGLE and END_ANGLE in degrees
-    integer, intent(in) :: x0, y0, radius, start_angle,end_angle
+    integer, intent(in) :: x0, y0, radius, start_angle, end_angle
 
     integer, parameter :: NQ = 4                   ! Number of quadrants
     real, parameter :: DEG2RAD = 1.74532925199E-2  ! Conversion factor
@@ -721,10 +726,11 @@ contains
 
   subroutine draw_arc_WC(x0,y0,radius,start_angle,end_angle)
     ! START_ANGLE and END_ANGLE in degrees
-    real(WP), intent(in) :: x0, y0, radius, start_angle,end_angle
+    real(WP), intent(in) :: x0, y0, radius, start_angle, end_angle
 
-    call draw_arc_DC(nint(m(1)*x0+m(2)),nint(m(3)*y0+m(4)), &
-         nint(m(1)*radius),nint(start_angle),nint(end_angle))
+    call draw_elliptic_arc_DC(nint(m(1)*x0+m(2)),nint(m(3)*y0+m(4)), &
+         nint(m(1)*radius),nint((-m(3))*radius), &
+         nint(start_angle),nint(end_angle))
   end subroutine draw_arc_WC
 
   !
@@ -795,6 +801,213 @@ contains
          nint(m(1)*radius),nint((-m(3))*radius))
   end subroutine draw_circle_WC
 
+  ! Adapted from DRAW_ARC(): Could we could have a single overloaded
+  ! DRAW_ARC?
+  subroutine draw_elliptic_arc_DC(x0,y0,a,b,start_angle,end_angle)
+    ! START_ANGLE and END_ANGLE in degrees
+    integer, intent(in) :: x0, y0, a, b, start_angle, end_angle
+
+    integer, parameter :: NQ = 4                   ! Number of quadrants
+    real, parameter :: DEG2RAD = 1.74532925199E-2  ! Conversion factor
+
+    integer :: n, u(NQ+1), v(NQ+1)
+    integer(8) :: x, y, e2, dx, dy, err, a8, b8
+    real :: phi_r
+
+    ! Computing the end points of the arc using X, Y as auxiliary
+    ! variables
+    phi_r = DEG2RAD*start_angle        ! Start point
+    x = nint(x0+a*cos(phi_r))
+    y = nint(y0-b*sin(phi_r))
+
+    n = 1
+    u(n) = int(x)
+    v(n) = int(y)
+
+    ! Cardinal point
+    if (start_angle < 90 .and. 90 < end_angle) then
+       n = n+1
+       u(n) = x0
+       v(n) = y0-b
+    end if
+
+    ! Cardinal point
+    if (start_angle < 180 .and. 180 < end_angle) then
+       n = n+1
+       u(n) = x0-a
+       v(n) = y0
+    end if
+
+    ! Cardinal point
+    if (start_angle < 270 .and. 270 < end_angle) then
+       n = n+1
+       u(n) = x0
+       v(n) = y0+b
+    end if
+
+    phi_r = DEG2RAD*end_angle          ! End point
+    x = nint(x0+a*cos(phi_r))
+    y = nint(y0-b*sin(phi_r))
+
+    n = n+1
+    u(n) = int(x)
+    v(n) = int(y)
+
+    !
+    ! Start the algorithm
+    !
+
+    a8 = a
+    b8 = b
+
+    ! II. quadrant from bottom left to top right
+    x = -a8
+    y = 0
+
+    ! error increment
+    e2 = b8
+    dx = (1+2*x)*e2*e2
+
+    ! error of 1.step
+    dy = x*x
+    err = dx+dy
+
+    ! The number of intervals between start-end
+    n = n-1
+
+    ! First the cardinal points...
+    if (is_on_arc(x0,y0+b)) &
+         rc = sdl_render_draw_point(renderer,x0,y0+b)
+
+    if (is_on_arc(x0,y0-b)) &
+         rc = sdl_render_draw_point(renderer,x0,y0-b)
+
+    if (is_on_arc(x0+a,y0)) &
+         rc = sdl_render_draw_point(renderer,x0+a,y0)
+
+    if (is_on_arc(x0-a,y0)) &
+         rc = sdl_render_draw_point(renderer,x0-a,y0)
+
+    do
+       if (is_on_arc(int(x0-x),int(y0+y))) &
+            rc = sdl_render_draw_point(renderer,int(x0-x),int(y0+y))
+
+       if (is_on_arc(int(x0+x),int(y0+y))) &
+            rc = sdl_render_draw_point(renderer,int(x0+x),int(y0+y))
+
+       if (is_on_arc(int(x0+x),int(y0-y))) &
+            rc = sdl_render_draw_point(renderer,int(x0+x),int(y0-y))
+
+       if (is_on_arc(int(x0-x),int(y0-y))) &
+            rc = sdl_render_draw_point(renderer,int(x0-x),int(y0-y))
+
+       e2 = 2*err
+
+       if (e2 >= dx) then
+          x = x+1
+          dx = dx+2*b8*b8
+          err = err+dx
+       end if
+
+       if (e2 <= dy) then
+          y = y+1
+          dy = dy+2*a8*a8
+          err = err+dy
+       end if
+
+       if (x > 0) exit
+    end do
+
+    ! The following DO should be EXACTLY equivalent to the C code:
+    ! while(y++ < b).
+    !
+    ! Too early stop for flat ellipses with a=1, -> finish tip of
+    ! ellipse
+    do
+       if (y < b) then
+          y = y+1
+          rc = sdl_render_draw_point(renderer,x0,int(y0+y))
+          rc = sdl_render_draw_point(renderer,x0,int(y0-y))
+       else
+          y = y+1
+          exit
+       end if
+    end do
+
+    ! Too early stop for flat ellipses with A = 1, -> finish tip of ellipse
+    do
+       if (y < b) then
+          y = y+1
+
+          if (is_on_arc(x0,int(y0+y))) &
+               rc = sdl_render_draw_point(renderer,x0,int(y0+y))
+
+          if (is_on_arc(x0,int(y0-y))) &
+               rc = sdl_render_draw_point(renderer,x0,int(y0-y))
+       else
+          y = y+1
+          exit
+       end if
+    end do
+
+  contains
+
+    ! This function return TRUE if the point (X,Y) is in the region
+    !
+    !   [U(1),U(2)] x [V(1),V(2)] + ... + [U(n),U(n+1)] x [V(n),V(n+1)]
+    !
+    ! N is the number of intervals, i.e. the arrays U and V must be
+    ! dimensioned N+1
+    !
+    ! IS_ON_ARC() being an internal function to DRAW_ARC(), we do not
+    ! need to pass N, U(:), V(:):
+    !
+    !   function is_on_arc(x,y,n,u,v) result(r)
+    !     integer, intent(in) :: x, y, n, u(:), v(:)
+    !
+    function is_on_arc(x,y) result(r)
+      integer, intent(in) :: x, y
+
+      logical :: r
+
+      integer :: i, x1, x2, y1, y2, temp
+
+      r = .false.
+
+      ! N, U, V from the caller
+      do i = 1, n
+         x1 = u(i)
+         x2 = u(i+1)
+
+         if (x1 > x2) then
+            temp = x1
+            x1 = x2
+            x2 = temp
+         end if
+
+         y1 = v(i)
+         y2 = v(i+1)
+
+         if (y1 > y2) then
+            temp = y1
+            y1 = y2
+            y2 = temp
+         end if
+
+         r = r .or. ((x1 <= x .and. x <= x2) .and. (y1 <= y .and. y <= y2))
+      end do
+    end function is_on_arc
+
+  end subroutine draw_elliptic_arc_DC
+
+  subroutine draw_elliptic_arc_WC(x0,y0,a,b,start_angle,end_angle)
+    ! START_ANGLE and END_ANGLE in degrees
+    real(WP), intent(in) :: x0, y0, a, b, start_angle, end_angle
+
+    call draw_elliptic_arc_DC(nint(m(1)*x0+m(2)),nint(m(3)*y0+m(4)), &
+         nint(m(1)*a),nint((-m(3))*b),nint(start_angle),nint(end_angle))
+  end subroutine draw_elliptic_arc_WC
+
   ! http://members.chello.at/~easyfilter/bresenham.html
   ! http://members.chello.at/~easyfilter/bresenham.c
   subroutine draw_ellipse_DC(x0,y0,a,b)
@@ -839,6 +1052,29 @@ contains
 
        if (x > 0) exit
     end do
+
+    ! The following DO should be EXACTLY equivalent to the C code:
+    ! while(y++ < b).
+    !
+    ! Too early stop for flat ellipses with a=1, -> finish tip of
+    ! ellipse
+    do
+       if (y < b) then
+          y = y+1
+          rc = sdl_render_draw_point(renderer,x0,int(y0+y))
+          rc = sdl_render_draw_point(renderer,x0,int(y0-y))
+       else
+          y = y+1
+          exit
+       end if
+    end do
+
+    ! This code, in essence, is equivalent to the C code: while(y++ < b)
+    ! do while (y < b)
+    !    y = y+1
+    !    rc = sdl_render_draw_point(renderer,x0,int(y0+y))
+    !    rc = sdl_render_draw_point(renderer,x0,int(y0-y))
+    ! end do
   end subroutine draw_ellipse_DC
 
   subroutine draw_ellipse_WC(x0,y0,a,b)
