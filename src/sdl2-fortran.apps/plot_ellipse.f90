@@ -2,7 +2,7 @@
 ! Author: Angelo Graziosi
 !
 !   created   : Aug 08, 2023
-!   last edit : Aug 10, 2023
+!   last edit : Aug 11, 2023
 !
 ! Just a joke.
 !
@@ -45,6 +45,8 @@
 !
 ! REF.
 !
+!   https://en.wikipedia.org/wiki/Ellipse
+!
 !   https://math.stackexchange.com/questions/3127984/whats-the-parametric-equation-of-a-partial-ellipse-in-3d-space-with-given-major
 !
 !   https://math.stackexchange.com/questions/3994666/parametric-equation-of-an-ellipse-in-the-3d-space
@@ -54,7 +56,7 @@
 
 module app_lib
   use :: kind_consts, only: WP
-  use math_consts, only: ZERO => Z0
+  use :: math_consts, only: ZERO => Z0
   use :: getdata, only: get
 
   implicit none
@@ -63,8 +65,8 @@ module app_lib
   abstract interface
      function ellipse_fcn(a,b,c,t) result(r)
        import :: WP
-       real(WP), intent(in) :: a(2), b(2), c(2), t
-       real(WP) :: r(2)
+       real(WP), intent(in) :: a(:), b(size(a)), c(size(a)), t
+       real(WP) :: r(size(a))
      end function ellipse_fcn
   end interface
 
@@ -98,15 +100,15 @@ contains
   ! function.
   !
   function faxes(a,b,c,t) result(r)
-    real(WP), intent(in) :: a(2), b(2), c(2), t
-    real(WP) :: r(2)
+    real(WP), intent(in) :: a(:), b(size(a)), c(size(a)), t
+    real(WP) :: r(size(a))
 
     r = c+cos(t)*a+sin(t)*b
   end function faxes
 
   function fpoints(a,b,c,t) result(r)
-    real(WP), intent(in) :: a(2), b(2), c(2), t
-    real(WP) :: r(2)
+    real(WP), intent(in) :: a(:), b(size(a)), c(size(a)), t
+    real(WP) :: r(size(a))
 
     r = c+cos(t)*(a-c)+sin(t)*(b-c)
   end function fpoints
