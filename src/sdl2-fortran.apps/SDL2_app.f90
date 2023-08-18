@@ -2,13 +2,13 @@
 ! Author: ANGELO GRAZIOSI
 !
 !   created   : Sep 08, 2018
-!   last edit : Aug 08, 2023
+!   last edit : Aug 18, 2023
 !
 !   Module to create SDL2 Fortran applications in DC or WC
 !
 
 module SDL2_app
-  use, intrinsic :: iso_c_binding, only: C_NULL_CHAR, C_PTR, C_NULL_PTR, &
+  use, intrinsic :: iso_c_binding, only: C_NULL_CHAR, C_PTR, &
        c_associated
   use :: kind_consts, only: WP
   use :: math_consts, only: ZERO => Z0, ONE => Z1
@@ -129,7 +129,7 @@ module SDL2_app
        fill_circle, fill_ellipse, fill_rect, fill_rects, &
        get_event, get_mouse_x, get_mouse_y, &
        init_graphics, quit, refresh, set_rgba_color, set_viewport, &
-       get_viewport, draw_axis_x, draw_axis_y, draw_axes
+       get_viewport, draw_axis_x, draw_axis_y, draw_axes, set_color
 
 contains
 
@@ -389,13 +389,10 @@ contains
     ! Quit gracefully.
     call sdl_destroy_renderer(renderer)
     call sdl_destroy_window(window)
-    window = C_NULL_PTR
-    renderer = C_NULL_PTR
-
     call sdl_quit()
 
     graphics_on = .false.
-    print *, 'All done'
+    print *, 'ALL DONE'
   end subroutine close_graphics
 
   subroutine set_rgba_color(red,green,blue,alpha)
@@ -411,6 +408,12 @@ contains
             uint8(blue),uint8(SDL_ALPHA_OPAQUE))
     end if
   end subroutine set_rgba_color
+
+  subroutine set_color(c)
+    integer, intent(in) :: c
+
+    call set_rgba_color(ibits(c,0,8),ibits(c,8,8),ibits(c,16,8),ibits(c,24,8))
+  end subroutine set_color
 
   subroutine get_viewport(rect)
     type(sdl_rect), intent(inout) :: rect

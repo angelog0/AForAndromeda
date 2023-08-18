@@ -2,17 +2,17 @@
 ! Author: ANGELO GRAZIOSI
 !
 !   created   : Jun 26, 2023
-!   last edit : Jul 24, 2023
+!   last edit : Aug 18, 2023
 !
 !   Star Walk in 2D of NPOINTS
 !
 ! DESCRIPTION
 !
 !   We draw the 2D star walk using SDL2-Fortran interface. The stars
-!   are initially distribuited at random in a square region then the
-!   gravitational field is computed at the position of each star and
-!   the star moves one step (of unit size) in the direction and the
-!   verse indicated by the field. We assume for all stars
+!   are initially distribuited at random in a rectangular region then
+!   the gravitational field is computed at the position of each star
+!   and the star moves one STEP in the direction and the verse
+!   indicated by the field. We assume for all stars
 !
 !     mu(i) = G*M(i) == 1
 !
@@ -54,64 +54,43 @@
 !
 ! SOME TEST RUN
 !
-!   ./star_walk_2d-static.out -1 5000 50 -1
+!   NSTARS = 5000, NSOUT = 100, XSIZE = VIEW_XSIZE = 50, STEP = 1
 !
-!   Try also with VIEW_SIDE 25, 15, 10 and/or SIDE 100, 1000..., i.e.
-!
-!   ./star_walk_2d-static.out -1 5000 1000 -1
+!   Try also with XSIZE = 500, VIEW_XSIZE = 600, 25, 15, 10 and/or
+!   XSIZE 100, 1000..., i.e.
 !
 ! and let it run for more than 50000 steps (83610).
 !
-! COMPUTING THE TRANSFORMATION FROM WC TO DC
+! With STEP = 1.5 the final cluster has radius ~ 0.8 and the time for
+! its formation is smaller. It is as if the stars were put in a
+! smaller region.
 !
-!   WC = (X1,X2) x (Y1,Y2), DC = (0,IMAX) x (JMAX,0)
+! With STEP = 0.5 the final cluster has radius ~ 0.3 and the time for
+! its formation is bigger. It is as if the stars were put in a larger
+! region.
 !
-!   DC is defined as (X1S,X2S) x (Y1S,Y2S), i.e.:
-!
-!     X1S = 0
-!     X2S = IMAX
-!     Y1S = JMAX
-!     Y2S = 0
-!
-!   Units per pixel:
-!
-!     DX = (X2-X1)/IMAX, DY = (Y2-Y1)/JMAX
-!
-!   Transformation from DC to WC:
-!
-!     X = X1+I*DX,  Y = Y2-J*DY
-!
-!   Tranformation from WC to DC:
-!
-!     I = (X-X1)/DX = DPX*(X-X1),  J = (Y2-Y)/DY = DPY*(Y2-Y)
-!
-!   where:
-!
-!     DPY = (1/DX) = IMAX/(X2-X1), DPY = (1/DY) = JMAX/(Y2-Y1)
-!
-!   are the pixel per unit in X and Y
-!
-! HOW TO BUILD THE APP (MSYS2/MINGW64, GNU/Linux, macOS)
+! HOW TO BUILD THE APP (MSYS2/UCRT64, GNU/Linux, macOS)
 !
 !   cd sdl2-fortran.apps
 !
 !   git clone https://github.com/interkosmos/fortran-sdl2.git
 !
 !   rm -rf *.mod; \
-!     gfortran[-mp-X] -std=f2018 -O3 -Wall \
-!       [`sdl2-config --cflags`] \
-!       ../basic-modules/{{kind,math}_consts,nicelabels}.f90 \
-!       $SDL2F90 SDL2_app.f90 star_walk_2d.f90 \
-!       $LIBS -o star_walk_2d$EXE; \
+!     gfortran[-mp-X] [-g3 -fbacktrace -fcheck=all] [-march=native] \
+!       -Wall -std=f2018 [-fmax-errors=1] \
+!       [-I ...] -O3 [`sdl2-config --cflags`] -J ../../modules \
+!       ../../basic-modules/{{kind,math}_consts,getdata,nicelabels}.f90 \
+!       $SDL2F90 ../SDL2_app.f90 \
+!       star_walk_2d.f90 -o star_walk_2d$EXE $LIBS; \
 !   rm -rf *.mod
 !
-!   ./star_walk_2d$EXE 1000 5000 50 30
+!   ./star_walk_2d$EXE
 !
 !   where, for the build on GNU/Linux [OSX+MacPorts X server], is:
 !
 !     EXE = .out
 !
-!   while for the build on MSYS2/MINGW64 is:
+!   while for the build on MSYS2/UCRT64 is:
 !
 !     EXE = -$MSYSTEM (or EMPTY)
 !
@@ -129,7 +108,7 @@
 !     LIBS = `sdl2-config --libs`
 !
 !   Notice that the above definition for LIBS produces a pure Windows
-!   app on MSYS2/MINGW64. This means that it will not show up a
+!   app on MSYS2/UCRT64. This means that it will not show up a
 !   console/terminal for input data. On these systems, the LIBS
 !   definition should be:
 !
@@ -137,7 +116,7 @@
 !
 !   For a static build (run from Explorer), I have found usefull
 !
-!     LIBS = -static -lmingw32 -lSDL2main -lSDL2 -lws2_32 -ldinput8 \
+!     LIBS = -static -lmingw32 [-lSDL2main] -lSDL2 -lws2_32 -ldinput8 \
 !            -ldxguid -ldxerr8 -luser32 -lgdi32 -lwinmm -limm32 -lole32 \
 !            -loleaut32 -lshell32 -lversion -luuid -lcomdlg32 -lhid -lsetupapi
 !
@@ -151,7 +130,7 @@
 !
 !   On Windows the application _hangs_ (NOT RESPONDING) when its
 !   window has focus (i.e. is selected) so the best way to launch it
-!   is from CMD or Explorer. From the MSYS2/MINGW64 shell one should
+!   is from CMD or Explorer. From the MSYS2/UCRT64 shell one should
 !   use:
 !
 !     open PROGNAME
@@ -163,225 +142,393 @@
 !   Maybe the same considerations hold for GNU/Linux and macOS.
 !
 
-program star_walk_2d
-  use kind_consts, only: WP
-
-  use SDL2_app, only: clear_screen, close_graphics, draw_point, &
-       init_graphics, refresh, set_rgba_color, clear_viewport, quit
+module app_lib
+  use :: kind_consts, only: WP
+  use :: getdata, only: get
+  use :: SDL2_app, only: init_graphics, close_graphics, QUIT_EVENT, &
+       get_event, quit, draw_point, set_color, clear_screen, refresh
 
   implicit none
+  private
 
-  integer, parameter :: NUMARGS = 4, &
-       SCREEN_WIDTH = 900, SCREEN_HEIGHT = 900, &
-       IMAX = SCREEN_WIDTH-1, JMAX = SCREEN_HEIGHT-1
+  ! Some useful color
+  integer, parameter :: RED = int(z'FF0000FF')
+  integer, parameter :: GREEN = int(z'FF00FF00')
+  integer, parameter :: BLUE = int(z'FFFF0000')
+  integer, parameter :: YELLOW = ior(RED,GREEN)
+  integer, parameter :: MAGENTA = ior(RED,BLUE)
+  integer, parameter :: CYAN = ior(GREEN,BLUE)
+  integer, parameter :: WHITE = ior(YELLOW,BLUE)
 
-  ! Region, pixel per unit (in X and Y)
-  real(WP) :: x_min, x_max, y_min, y_max, dpx, dpy
+  character(len=*), parameter :: TITLE = 'The Star Walk in 2D'
+  character(len=*), parameter :: FMT = '(*(g0,1x))'
 
-  character(len=*), parameter :: FMT = '(*(g0,1x))'  !'(a,g0.7)'
+  ! DATA
+  !
+  integer :: screen_width = 900, screen_height = 900, &
+       nsout = 100, nstars = 5000
+  real(WP) :: xsize = 50, view_xsize = 50, step = 1
 
-  integer :: nargs
-  real(WP) :: args_val(NUMARGS)
-  character(len=80) :: args
+  ! AUXILIARY DATA
+  !
+  integer :: ival, i, istep, ierr = 0
 
-  integer :: nsout, npoints, istep, i, ierr
-  real(WP) :: rms_d, f(2), side, view_side, mean_x, mean_y, sigma_x, sigma_y
+  ! DENSITY = NSTARS/(XSIZE*YSIZE); ysize = xsize etc.
+  real(WP) :: x_min, x_max, y_min, y_max, f(2), &
+       ysize = 50, view_ysize = 50, &
+       rms_d, mean_x, mean_y, sigma_x, sigma_y, density = 5E3_WP/50**2, rval
+
+  ! MEMORY HANDLERS
   real(WP), allocatable :: p(:,:)
 
-  nargs = command_argument_count()
-
-  if (nargs /= NUMARGS) &
-       stop ': USAGE: ./star_walk_2d <NSOUT> <NPOINTS> <SIDE> <VSIDE>'
-
-  ! Reading the arguments
-  do i = 1, nargs
-     call get_command_argument(i,args)
-     read(args,*) args_val(i)
-  end do
-
-  ! ARGS_VAL(1) is NSOUT...
-  nsout = nint(args_val(1))
-  if (nsout < 1) nsout = 100
-
-  ! ARGS_VAL(2) is NPOINTS...
-  npoints = nint(args_val(2))
-  if (npoints < 1) npoints = 1000
-
-  ! First row of P: X coordinate
-  ! Second row of P: Y coordinate
-  allocate(p(2,npoints),stat=ierr)
-  if (ierr /= 0) stop ': Allocation failure for P(:,:).'
-
-  ! ARGS_VAL(3) is SIDE...
-  side = args_val(3)
-  if (side < 0) side = 50
-
-  ! ARGS_VAL(4) is VIEW_SIDE...
-  view_side = args_val(4)
-  if (view_side < 0) view_side = side
-
-  ! Computing params for initial positions
-  x_max = side/2
-  x_min = -x_max
-
-  y_max = x_max
-  y_min = -y_max
-
-  ! Initial positions in the square [x_min,x_max] x [y_min,y_max]
-  ! (Yes, x_max-x_min == side, we know...)
-  do i = 1, npoints
-     call random_number(f)
-     associate (q => p(:,i))
-       q = x_min+(x_max-x_min)*f
-     end associate
-  end do
-
-  ! Computing params for WC to DC mapping
-  x_max = view_side/2
-  x_min = -x_max
-
-  y_max = x_max
-  y_min = -y_max
-
-  ! (Yes, x_max-x_min == view_side etc., we know...)
-  dpx = IMAX/(x_max-x_min)
-  dpy = JMAX/(y_max-y_min)
-
-  ! ... or ALL points at the origin O
-  ! x = 0
-  ! y = 0
-
-  write(*,*)
-  write(*,FMT) 'Running with NSOUT      : ', nsout
-  write(*,FMT) 'Running with NPOINTS    : ', npoints
-  write(*,FMT) 'Running with DENSITY    : ', npoints/side**2
-  write(*,FMT) 'Running with REGION SIDE: ', side
-  write(*,FMT) 'Running with VIEW SIDE  : ', view_side
-  write(*,*)
-
-  call init_graphics('The Star Walk in 2D', &
-       width=SCREEN_WIDTH,height=SCREEN_HEIGHT)
-
-  istep = 0
-  do while (.not. quit())
-     istep = istep+1
-
-     call clear_screen()
-
-     ! YELLOW: we have to set the color after calling CLEAR_SCREEN()
-     ! because... CLEAR_SCREEN() IS TOO PRIMITIVE!!!
-     call set_rgba_color(255,255,0)
-
-     do i = 1, npoints
-        associate (q => p(:,i))
-          call field(q,f)
-          f = f/norm2(f)
-
-          ! The diameter of the final cluster is determined by the
-          ! step size F. Try:
-          !
-          !   q = q+k*f
-          !
-          ! with k = 2, 3, ..., 0.1, 0.5, ...
-          !
-          q = q+f
-
-          call draw_point(x2s(q(1)),y2s(q(2)))
-        end associate
-     end do
-
-     call refresh()
-
-     if (mod(istep,nsout) == 0) &
-          write(*,FMT) 'CURRENT STEP            : ', istep
-  end do
-
-  associate (nsteps => istep)
-    ! The rms displacement is sqrt(nsteps)
-    rms_d = nsteps
-    rms_d = sqrt(rms_d)
-
-    write(*,*)
-    write(*,FMT) 'Executed with NSTEPS    : ', nsteps
-    write(*,FMT) 'Executed with RMS_D     : ', rms_d
-  end associate
-
-  ! Computing mean and sigma for final cluster(s)
-  ! See: https://www.programming-idioms.org/idiom/203/calculate-mean-and-standard-deviation/3468/fortran
-  !
-  associate (x => p(1,:), y => p(2,:))
-    mean_x = sum(x)/npoints
-    mean_y = sum(y)/npoints
-
-    sigma_x = sqrt(sum(x**2 )/npoints-mean_x**2 )
-    sigma_y = sqrt(sum(y**2 )/npoints-mean_y**2 )
-  end associate
-
-  write(*,*)
-  write(*,FMT) 'FINAL CLUSTER(S) MEAN-X : ', mean_x
-  write(*,FMT) 'FINAL CLUSTER(S) MEAN-Y : ', mean_y
-  write(*,*)
-  write(*,FMT) 'FINAL CLUSTER(S) SIGM-X : ', sigma_x
-  write(*,FMT) 'FINAL CLUSTER(S) SIGM-Y : ', sigma_y
-
-  associate (r => sqrt(p(1,:)**2+p(2,:)**2), &
-       mean_r => mean_x, sigma_r => sigma_x)
-    mean_r = sum(r)/npoints
-
-    sigma_r = sqrt(sum(r**2 )/npoints-mean_r**2 )
-
-    write(*,*)
-    write(*,FMT) 'FINAL CLUSTER(S) MEAN-R : ', mean_r
-    write(*,FMT) 'FINAL CLUSTER(S) SIGM-R : ', sigma_r
-    write(*,*)
-  end associate
-
-  call close_graphics()
-
-  if (allocated(p)) deallocate(p,stat=ierr)
-  if (ierr /= 0) stop ': Deallocation failure for P(:,:).'
+  public :: app_menu
 
 contains
 
-  function x2s(x) result (r)
-    real(WP), intent(in) :: x
-    integer :: r
+  subroutine setup_params()
+    ! First row of P  : X coordinate
+    ! Second row of P : Y coordinate
+    allocate(p(2,nstars),STAT=ierr)
+    if (ierr /= 0) stop ': Allocation failure for P(:,:) (SETUP_PARAMS).'
 
-    r = nint(dpx*(x-x_min))
-  end function x2s
+    ! Computing params for initial positions
+    x_max = xsize/2
+    x_min = -x_max
 
-  function y2s(y) result (r)
-    real(WP), intent(in) :: y
-    integer :: r
+    ysize = (xsize*screen_height)/screen_width
+    y_max = ysize/2
+    y_min = -y_max
 
-    r = nint(dpy*(y_max-y))
-  end function y2s
+    density = nstars/(xsize*ysize)
 
-  subroutine field(q,f)
-    real(WP), intent(in) :: q(2)
-    real(WP), intent(out) :: f(2)
-
-    integer, save :: i
-    real(WP), save :: d(2), r
-
-    ! G(P) = -SUM_i mu(i)*(r(P)-r(i))/|r(P)-r(i)|**3, with i /= P
-    !
-    !   mu(i) = G*m(i)
-    !
-    ! Here mu(i) = 1
-    !
-
-    f = 0
-    do i = 1, npoints
-       d = p(:,i)-q         ! p(:,i)-q = -(q-p(:,i)): this avoids f = -f
-       r = norm2(d)
-
-       if (r == 0) cycle    ! i /= P ...
-
-       d = d/r**3
-       f = f+d
+    ! Initial positions in the square [x_min,x_max] X [y_min,y_max]
+    istep = 0
+    do i = 1, nstars
+       call random_number(f)
+       associate (q => p(:,i))
+         q(1) = x_min+xsize*f(1)
+         q(2) = y_min+ysize*f(2)
+       end associate
     end do
 
-  end subroutine field
+    ! Computing params for WC to DC mapping
+    x_max = view_xsize/2
+    x_min = -x_max
 
+    view_ysize = (view_xsize*screen_height)/screen_width
+    y_max = view_ysize/2
+    y_min = -y_max
+
+  end subroutine setup_params
+
+  subroutine shutdown_params()
+    if (allocated(p)) deallocate(p,STAT=ierr)
+    if (ierr /= 0) stop ': Deallocation failure for P(:,:) (SHUTDOWN_PARAMS).'
+  end subroutine shutdown_params
+
+  subroutine show_params()
+    write(*,*) 'Current parameters:'
+    write(*,*)
+    write(*,*) 'NSTARS = ', nstars
+    write(*,*) 'NSOUT  = ', nsout
+    write(*,*)
+    write(*,*) 'STEP = ', step
+    write(*,*)
+    write(*,*) 'XSIZE = ', xsize
+    write(*,*) 'YSIZE = ', ysize
+    write(*,*)
+    write(*,*) 'VIEW_XSIZE = ', view_xsize
+    write(*,*) 'VIEW_YSIZE = ', view_ysize
+    write(*,*)
+    write(*,*) 'DENSITY = ', density
+    write(*,*)
+    write(*,*) 'SCREEN_WIDTH  = ', screen_width
+    write(*,*) 'SCREEN_HEIGHT = ', screen_height
+    write(*,*)
+  end subroutine show_params
+
+  subroutine paint_screen()
+
+    do while (.not. quit())
+       ! Draw stars at current time (ISTEP)
+       call display_stars()
+
+       if (mod(istep,nsout) == 0) &
+            write(*,FMT) 'CURRENT STEP            : ', istep
+
+       istep = istep+1
+       call update_stars()
+    end do
+
+    ! Draw stars at the last step executed
+    call display_stars()
+
+    call print_results()
+
+  contains
+
+    subroutine display_stars()
+      call clear_screen()
+      call set_color(YELLOW)
+
+      do i = 1, nstars
+         associate (q => p(:,i))
+           call draw_point(q(1),q(2))
+         end associate
+      end do
+      call refresh()
+    end subroutine display_stars
+
+    ! Total "force" of the remaining NSTARS-1 satrs on star at position Q(:)
+    subroutine field(q,f)
+      real(WP), intent(in) :: q(2)
+      real(WP), intent(out) :: f(2)
+
+      integer, save :: i
+      real(WP), save :: d(2), r
+
+      ! G(P) = -SUM_i mu(i)*(r(P)-r(i))/|r(P)-r(i)|**3, with i /= P
+      !
+      !   mu(i) = G*m(i)
+      !
+      ! Here mu(i) = 1
+      !
+
+      f = 0
+      do i = 1, nstars
+         d = p(:,i)-q         ! p(:,i)-q = -(q-p(:,i)): this avoids f = -f
+         r = norm2(d)
+
+         if (r == 0) cycle    ! i /= P ...
+
+         d = d/r**3
+         f = f+d
+      end do
+    end subroutine field
+
+    subroutine update_stars()
+      do i = 1, nstars
+         associate (q => p(:,i))
+           call field(q,f)
+
+           ! The diameter of the final cluster is determined by the
+           ! step size. Try:
+           !
+           !   step = 2, 3, ..., 0.1, 0.5, ...
+           !
+           !f = step*(f/norm2(f)) ! TWO divisions and TWO multiplications
+           f = (step/norm2(f))*f  ! ONE divisions and TWO multiplications
+
+           q = q+f
+         end associate
+      end do
+    end subroutine update_stars
+
+    subroutine print_results()
+      associate (nsteps => istep)
+        ! The rms displacement is sqrt(nsteps)
+        rms_d = nsteps
+        rms_d = sqrt(rms_d)
+
+        write(*,*)
+        write(*,FMT) 'Executed with NSTEPS    : ', nsteps
+        write(*,FMT) 'Executed with RMS_D     : ', rms_d
+      end associate
+
+      ! Computing mean and sigma for final cluster(s)
+      ! See: https://www.programming-idioms.org/idiom/203/calculate-mean-and-standard-deviation/3468/fortran
+      !
+      associate (x => p(1,:), y => p(2,:))
+        mean_x = sum(x)/nstars
+        mean_y = sum(y)/nstars
+
+        sigma_x = sqrt(sum(x**2 )/nstars-mean_x**2 )
+        sigma_y = sqrt(sum(y**2 )/nstars-mean_y**2 )
+      end associate
+
+      write(*,*)
+      write(*,FMT) 'FINAL CLUSTER(S) MEAN-X : ', mean_x
+      write(*,FMT) 'FINAL CLUSTER(S) MEAN-Y : ', mean_y
+      write(*,*)
+      write(*,FMT) 'FINAL CLUSTER(S) SIGM-X : ', sigma_x
+      write(*,FMT) 'FINAL CLUSTER(S) SIGM-Y : ', sigma_y
+
+      associate (r => norm2(p,1), mean_r => mean_x, sigma_r => sigma_x)
+        mean_r = sum(r)/nstars
+
+        sigma_r = sqrt(sum(r**2 )/nstars-mean_r**2 )
+
+        write(*,*)
+        write(*,FMT) 'FINAL CLUSTER(S) MEAN-R : ', mean_r
+        write(*,FMT) 'FINAL CLUSTER(S) SIGM-R : ', sigma_r
+        write(*,*)
+      end associate
+    end subroutine print_results
+  end subroutine paint_screen
+
+  subroutine run()
+    integer :: ievent = -1000
+
+    ! First the PARAMS ...
+    call setup_params()
+    call show_params()
+
+    call init_graphics(TITLE, &
+         WIDTH=screen_width,HEIGHT=screen_height, &
+         X1=x_min,X2=x_max,Y1=y_min,Y2=y_max)
+
+    ! We need to reset IEVENT if we want to restart the run
+    ievent = -1000
+    do while (ievent /= QUIT_EVENT)
+       call paint_screen()
+
+       ievent = get_event()
+    end do
+
+    call close_graphics()
+    call shutdown_params()
+  end subroutine run
+
+  ! ================
+  !    M  E  N  U
+  ! ================
+
+  subroutine set_nstars()
+    ival= nstars
+    call get('NSTARS =',ival)
+    if (ival > 0) then
+       nstars = ival
+    else
+       write(*,*) 'NSTARS <= 0! UNCHANGED...'
+    end if
+  end subroutine set_nstars
+
+  subroutine set_nsout()
+    ival= nsout
+    call get('NSOUT =',ival)
+    if (ival > 0) then
+       nsout = ival
+    else
+       write(*,*) 'NSOUT <= 0! UNCHANGED...'
+    end if
+  end subroutine set_nsout
+
+  subroutine set_step()
+    rval= step
+    call get('STEP =',rval)
+    if (rval > 0) then
+       step = rval
+    else
+       write(*,*) 'STEP <= 0! UNCHANGED...'
+    end if
+  end subroutine set_step
+
+  subroutine set_xsize()
+    rval= xsize
+    call get('XSIZE =',rval)
+    if (rval > 0) then
+       xsize = rval
+    else
+       write(*,*) 'XSIZE <= 0! UNCHANGED...'
+    end if
+  end subroutine set_xsize
+
+  subroutine set_view_xsize()
+    rval= view_xsize
+    call get('VIEW_XSIZE =',rval)
+    if (rval > 0) then
+       view_xsize = rval
+    else
+       write(*,*) 'VIEW_XSIZE <= 0! UNCHANGED...'
+    end if
+  end subroutine set_view_xsize
+
+  subroutine set_screen_size()
+    ival= screen_width
+    call get('SCREEN_WIDTH =',ival)
+    if (ival > 0) then
+       screen_width = ival
+    else
+       write(*,*) 'SCREEN_WIDTH <= 0! UNCHANGED...'
+    end if
+
+    ival= screen_height
+    call get('SCREEN_HEIGHT =',ival)
+    if (ival > 0) then
+       screen_height = ival
+    else
+       write(*,*) 'SCREEN_HEIGHT <= 0! UNCHANGED...'
+    end if
+  end subroutine set_screen_size
+
+  subroutine show_menu()
+    write(*,*) 'Choose item:'
+    write(*,*) '  N : Number of Stars'
+    write(*,*) '  O : Output Rate'
+    write(*,*)
+    write(*,*) '  P : Step Length'
+    write(*,*)
+    write(*,*) '  X : Region X-Size'
+    write(*,*) '  W : View X-Size'
+    write(*,*)
+    write(*,*) '  S : Screen Size'
+    write(*,*)
+    write(*,*) '  R : RUN'
+    write(*,*) '  Q : QUIT'
+  end subroutine show_menu
+
+  subroutine process_menu(key)
+    character, intent(in) :: key
+
+    select case (key)
+    case ('N')
+       call set_nstars()
+    case ('O')
+       call set_nsout()
+    case ('P')
+       call set_step()
+    case ('X')
+       call set_xsize()
+    case ('W')
+       call set_view_xsize()
+    case ('S')
+       call set_screen_size()
+
+    case ('R')
+       call run()
+    end select
+  end subroutine process_menu
+
+  subroutine app_menu()
+    character :: key
+
+    do
+       call show_menu()
+
+       ! Default PROMPT
+       key = 'R'
+       call get('Choice :',key)
+
+       ! Convert in upcase if not
+       if ('a' <= key .and. key <= 'z') key = char(ichar(key)-32)
+
+       if (key == 'Q') exit
+
+       write(*,*)
+
+       call process_menu(key)
+    end do
+  end subroutine app_menu
+end module app_lib
+
+program star_walk_2d
+  use :: app_lib
+
+  implicit none
+
+  ! Initialize the rnd generator (maybe we do not need this anymore in
+  ! recent version of GFortran)
+  call random_init(.false., .false.)
+
+  call app_menu()
 end program star_walk_2d
