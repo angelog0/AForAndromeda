@@ -2,7 +2,7 @@
 ! Author: ANGELO GRAZIOSI
 !
 !   created   : Jun 26, 2023
-!   last edit : Aug 18, 2023
+!   last edit : Aug 21, 2023
 !
 !   Star Walk in 2D of NPOINTS
 !
@@ -69,7 +69,7 @@
 ! its formation is bigger. It is as if the stars were put in a larger
 ! region.
 !
-! HOW TO BUILD THE APP (MSYS2/UCRT64, GNU/Linux, macOS)
+! HOW TO BUILD THE APP (MSYS2/MINGW64, GNU/Linux, macOS)
 !
 !   cd sdl2-fortran.apps
 !
@@ -90,7 +90,7 @@
 !
 !     EXE = .out
 !
-!   while for the build on MSYS2/UCRT64 is:
+!   while for the build on MSYS2/MINGW64 is:
 !
 !     EXE = -$MSYSTEM (or EMPTY)
 !
@@ -108,7 +108,7 @@
 !     LIBS = `sdl2-config --libs`
 !
 !   Notice that the above definition for LIBS produces a pure Windows
-!   app on MSYS2/UCRT64. This means that it will not show up a
+!   app on MSYS2/MINGW64. This means that it will not show up a
 !   console/terminal for input data. On these systems, the LIBS
 !   definition should be:
 !
@@ -130,7 +130,7 @@
 !
 !   On Windows the application _hangs_ (NOT RESPONDING) when its
 !   window has focus (i.e. is selected) so the best way to launch it
-!   is from CMD or Explorer. From the MSYS2/UCRT64 shell one should
+!   is from CMD or Explorer. From the MSYS2/MINGW64 shell one should
 !   use:
 !
 !     open PROGNAME
@@ -246,6 +246,20 @@ contains
     write(*,*) 'SCREEN_HEIGHT = ', screen_height
     write(*,*)
   end subroutine show_params
+
+  subroutine draw_logo()
+    use :: SDL2_app, only: draw_circle, draw_ellipse, refresh
+
+    call set_color(RED)
+    call draw_ellipse(screen_width/2,screen_height/2,250,100)
+    call set_color(GREEN)
+    call draw_ellipse(screen_width/2,screen_height/2,100,250)
+    call set_color(BLUE)
+    call draw_circle(screen_width/2,screen_height/2,250)
+    call set_color(WHITE)
+    call draw_circle(screen_width/2,screen_height/2,100)
+    call refresh()
+  end subroutine draw_logo
 
   subroutine paint_screen()
 
@@ -367,7 +381,7 @@ contains
   end subroutine paint_screen
 
   subroutine run()
-    integer :: ievent = -1000
+    integer :: ievent
 
     ! First the PARAMS ...
     call setup_params()
@@ -379,11 +393,20 @@ contains
 
     ! We need to reset IEVENT if we want to restart the run
     ievent = -1000
-    do while (ievent /= QUIT_EVENT)
-       call paint_screen()
+    call draw_logo()
+    ievent = get_event()
 
-       ievent = get_event()
-    end do
+    if (ievent /= QUIT_EVENT) then
+
+       ! We need to reset IEVENT if we want to restart the run
+       ievent = -1000
+       do while (ievent /= QUIT_EVENT)
+          call paint_screen()
+
+          ievent = get_event()
+       end do
+
+    end if
 
     call close_graphics()
     call shutdown_params()
