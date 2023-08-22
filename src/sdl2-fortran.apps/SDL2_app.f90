@@ -2,7 +2,7 @@
 ! Author: ANGELO GRAZIOSI
 !
 !   created   : Sep 08, 2018
-!   last edit : Aug 18, 2023
+!   last edit : Aug 22, 2023
 !
 !   Module to create SDL2 Fortran applications in DC or WC
 !
@@ -56,7 +56,9 @@ module SDL2_app
   real(WP), dimension(0:MAX_MAPS) :: x_min = ZERO, x_max = ONE, &
        y_min = ZERO, y_max = ONE, u_min = ZERO, u_max = WIDTH0-1, &
        v_min = HEIGHT0-1, v_max = ZERO
-  real(WP) :: maps(4,0:MAX_MAPS), m(4)
+
+  real(WP), target :: maps(4,0:MAX_MAPS)
+  real(WP), pointer :: m(:) => null()
 
   ! -----------------------------------
 
@@ -247,7 +249,7 @@ contains
 
     call set_viewport(vp(id_map))
 
-    m(:) = maps(:,id_map)
+    m => maps(:,id_map)
   end subroutine select_map
 
   ! ! WC to DC transformations... and viceversa
