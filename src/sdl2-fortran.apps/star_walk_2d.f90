@@ -24,9 +24,9 @@
 !
 !   this means that G*M == 1 ==> M = M(SUN)/mu(SUN) ~ 3390*M(SUN).  If
 !   the step is 1, i.e. 1 UA, assuming s == 1 UA = (1/2)g*t**2, it
-!   would be t = sqrt(2/g). With 5000 points in a square of side 1000
+!   would be t = sqrt(2/g). With 5000 stars in a square of side 1000
 !   (UA), we would have sqrt(5000) in a side of 1000 (UA), i.e. about
-!   1000/sqrt(5000) ~ 14 UA between two near points, and this would
+!   1000/sqrt(5000) ~ 14 UA between two near stars, and this would
 !   give g = GM/r**2 ~ 1/14**2, i.e. t = sqrt(2/g) ~ sqrt(2*14**2) ~
 !   20 D. In this model 1 step (1 UA) is done in about 20 D.
 !
@@ -80,7 +80,7 @@
 !       -Wall -std=f2018 [-fmax-errors=1] \
 !       [-I ...] -O3 [`sdl2-config --cflags`] -J ../../modules \
 !       ../../basic-modules/{{kind,math}_consts,getdata,nicelabels}.f90 \
-!       $SDL2F90 ../SDL2_{app,shading}.f90 \
+!       $SDL2F90 SDL2_{app,shading}.f90 \
 !       star_walk_2d.f90 -o star_walk_2d$EXE $LIBS; \
 !   rm -rf *.mod
 !
