@@ -2,7 +2,7 @@
 ! Author: ANGELO GRAZIOSI
 !
 !   created   : Feb 10, 2014
-!   last edit : Dec 18, 2022
+!   last edit : Aug 23, 2023
 !
 !   A new implementation of shade.kumac PAW macro.  See
 !   http://paw.web.cern.ch/paw/allfaqs.html
@@ -20,6 +20,44 @@ module SDL2_shading
 
   integer, parameter :: NMXPT = 20
 
+  ! Borland alike (opaque) colors
+  integer, parameter, public :: BLACK = int(z'FF000000')
+  integer, parameter, public :: BLUE = int(z'FF800000')
+  integer, parameter, public :: GREEN = int(z'FF008000')
+  integer, parameter, public :: CYAN = ior(GREEN,BLUE)
+  integer, parameter, public :: RED = int(z'FF000080')
+  integer, parameter, public :: MAGENTA = ior(RED,BLUE)
+  integer, parameter, public :: BROWN = ior(RED,GREEN)
+  integer, parameter, public :: GRAY = ior(BROWN,BLUE)
+  integer, parameter, public :: LGRAY = int(z'FFC0C0C0')
+  integer, parameter, public :: LBLUE = int(z'FFFF0000')
+  integer, parameter, public :: LGREEN = int(z'FF00FF00')
+  integer, parameter, public :: LCYAN = ior(LGREEN,LBLUE)
+  integer, parameter, public :: LRED = int(z'FF0000FF')
+  integer, parameter, public :: LMAGENTA = ior(LRED,LBLUE)
+  integer, parameter, public :: YELLOW = ior(LRED,LGREEN)
+  integer, parameter, public :: WHITE = ior(YELLOW,LBLUE)
+
+  integer, parameter, public :: BORLAND_PALETTE(0:15) = [ &
+       BLACK, &
+       BLUE, &
+       GREEN, &
+       CYAN, &
+       RED, &
+       MAGENTA, &
+       BROWN, &
+       GRAY, &
+       LGRAY, &
+       LBLUE, &
+       LGREEN, &
+       LCYAN, &
+       LRED, &
+       LMAGENTA, &
+       YELLOW, &
+       WHITE &
+       ]
+
+
   integer, parameter, public :: MAX_COLOUR_INDEX = 255
   integer, parameter, public :: MAX_COLOURS = MAX_COLOUR_INDEX+1
 
@@ -29,9 +67,27 @@ module SDL2_shading
   integer :: r(NMXPT), g(NMXPT), b(NMXPT)
 
   public :: color_rgb_t
-  public :: shading_setup, get_shading_color
+  public :: RGBA, shading_setup, get_shading_color
 
 contains
+
+  ! Adapted from RGB() function in WIN32 module Return a RGBA color in
+  ! a SDL2_gfx format (AABBGGRR), which is similar to COLORREF (WIN32)
+  function RGBA(red,green,blue,alpha) result(color)
+    use :: sdl2, only: SDL_ALPHA_OPAQUE
+
+    integer, intent(in) :: red, green, blue
+    integer, intent(in), optional :: alpha
+    integer :: color ! AABBGGRR
+
+    if (present(alpha)) then
+       color = ior(ior(ior((red),ishft((green),8)),ishft((blue),16)),&
+            ishft(alpha,24))
+    else
+       color = ior(ior(ior((red),ishft((green),8)),ishft((blue),16)),&
+            ishft(SDL_ALPHA_OPAQUE,24))
+    end if
+  end function RGBA
 
   subroutine set_shade(idxi,ri,gi,bi)
     integer, intent(in) :: idxi, ri, gi, bi
