@@ -4,7 +4,7 @@
 !   created   : Jun 26, 2023
 !   last edit : Aug 23, 2023
 !
-!   Star Walk in 2D of NPOINTS
+!   Star Walk in 2D of NSTARS
 !
 ! DESCRIPTION
 !
