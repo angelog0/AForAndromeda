@@ -184,8 +184,9 @@ if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
     echo -n "Building ${program_name^^} ... "
     rm -rf *.mod
     ${FC} -std=f2018 -O3 -Wall \
-          ${BMODS_DIR}/{{kind,math}_consts,nicelabels}.f90 ${SDL2F90} \
-          SDL2_app.f90 ${program_name}.f90 ${LIBS} -o ${program_name}${EXE}
+          ${BMODS_DIR}/{{kind,math}_consts,getdata,nicelabels}.f90 ${SDL2F90} \
+          SDL2_{app,shading}.f90 ${program_name}.f90 ${LIBS} \
+          -o ${program_name}${EXE}
     rm -rf *.mod
     mv ${program_name}${EXE} "${BIN_DIR}"
     echo "done."
