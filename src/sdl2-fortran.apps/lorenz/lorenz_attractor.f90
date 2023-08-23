@@ -2,7 +2,7 @@
 ! Author: ANGELO GRAZIOSI
 !
 !   created   : May 02, 2015
-!   last edit : Jul 20, 2023
+!   last edit : Aug 23, 2023
 !
 !   Lorenz Attractor
 !
@@ -22,12 +22,12 @@
 !   cd lorenz
 !
 !   rm -rf *.mod \
-!     gfortran[-mp-X] -std=f2018 -O3 -Wall [-Wno-unused-dummy-argument] \
-!       [`sdl2-config --cflags`] \
-!       $B/basic-modules/{{kind,math}_consts,getdata,nicelabels}.f90 \
-!       $B/ode-modules/{everhart,ode}_integrator.f90 $SDL2F90 \
-!       $S/SDL2_{app,shading}.f90 \
-!       lorenz_attractor.f90 $LIBS -o lorenz_attractor$EXE; \
+!     gfortran[-mp-X] [-march=native] -Wall [-Wno-unused-dummy-argument] \
+!       -std=f2018 [-fmax-errors=1] [`sdl2-config --cflags`] -O3 \
+!       ../../basic-modules/{{kind,math}_consts,getdata,nicelabels}.f90 \
+!       ../../ode-modules/{everhart,ode}_integrator.f90  \
+!       $SDL2F90 ../SDL2_{app,shading}.f90 \
+!       lorenz_attractor.f90 -o lorenz_attractor$EXE $LIBS; \
 !   rm -rf *.mod
 !
 !   ./lorenz_attractor$EXE
@@ -42,10 +42,7 @@
 !
 !   and (all platform):
 !
-!     B = ../..
-!     S = ..
-!
-!     SDL2F90 = $S/fortran-sdl2/src/{c_util,sdl2/{sdl2_stdinc,sdl2_audio,\
+!     SDL2F90 = ../fortran-sdl2/src/{c_util,sdl2/{sdl2_stdinc,sdl2_audio,\
 !       sdl2_blendmode,sdl2_cpuinfo,sdl2_gamecontroller,sdl2_error,\
 !       sdl2_events,sdl2_filesystem,sdl2_hints,sdl2_joystick,sdl2_keyboard,\
 !       sdl2_log,sdl2_messagebox,sdl2_rect,sdl2_pixels,sdl2_platform,\
@@ -65,7 +62,7 @@
 !
 !   For a static build (run from Explorer), I have found usefull
 !
-!     LIBS = -static -lmingw32 -lSDL2main -lSDL2 -lws2_32 -ldinput8 \
+!     LIBS = -static -lmingw32 [-lSDL2main] -lSDL2 -lws2_32 -ldinput8 \
 !            -ldxguid -ldxerr8 -luser32 -lgdi32 -lwinmm -limm32 -lole32 \
 !            -loleaut32 -lshell32 -lversion -luuid -lcomdlg32 -lhid -lsetupapi
 !
@@ -92,14 +89,25 @@
 !
 
 module lorenz_attractor_lib
-  use kind_consts, only: WP
-  use sdl2, only: sdl_rect
+  use :: kind_consts, only: WP
+  use :: getdata, only: get
+  use :: ode_integrator, only: ode_step => step, ode_on, ode_off
+  use :: sdl2, only: sdl_rect
+  use :: SDL2_app, only: QUIT_EVENT, quit, get_event, &
+       select_map, set_map_window, set_map_viewport, &
+       init_graphics, close_graphics, clear_screen, &
+       draw_point, draw_rect, set_color, refresh
+  use :: SDL2_shading, only: RED, BLUE, BROWN, LRED, LBLUE, LCYAN, YELLOW
 
   implicit none
   private
 
   integer, parameter :: NEQ = 3
 
+  character(len=*), parameter :: TITLE = 'Lorenz Attractor'
+
+  ! DATA
+  !
   ! Output window/region layout
   integer :: d1 = 20, d2 = 500
 
@@ -115,18 +123,61 @@ module lorenz_attractor_lib
        v_min = -5.0_WP, v_max = 65.0_WP, &
        y0(NEQ) = [ 0.0_WP, 1.0_WP, 1.05_WP ]
 
+  ! AUXILIARY DATA
+  !
+
   ! The viewports, aka the bounding rectangles, for tz-plot, uv-P plot
   ! and uv-Q plot (remember we use Cavalieri transformation...)
   type(sdl_rect) :: vp1 = sdl_rect(0,0,0,0), vp2 = sdl_rect(0,0,0,0), &
        vp3 = sdl_rect(0,0,0,0)
 
+  integer, target :: colors_dark(3) = [RED, BLUE, BROWN]
+  integer, target :: colors_light(3) = [LRED, LBLUE, YELLOW]
+  integer, pointer :: color(:) => null()
+
   public :: app_menu
 
 contains
 
-  subroutine setup_graphics()
-    use SDL2_app, only: set_map_window, set_map_viewport, init_graphics
+  ! =========================
+  !    U  T  I  L  I  T  Y
+  ! =========================
 
+  ! Cavalieri transformation R3 => R2
+  subroutine cavalieri(p,u,v)
+    real(WP), intent(in) :: p(:)
+    real(WP), intent(out) :: u, v
+    !
+    !  u = (-1/2)*x+y
+    !  v = (-1/2)*x+z
+    !
+    associate (x => p(1), y => p(2), z => p(3))
+      v = -0.5_WP*x
+      u = v+y
+      v = v+z
+    end associate
+  end subroutine cavalieri
+
+  ! Lorenz model
+  subroutine field(t,q,f)
+    real(WP), intent(in) :: t, q(:)
+    real(WP), intent(out) :: f(:)
+
+    real(WP), parameter :: SIGMA= 10.0_WP, RHO = 28.0_WP, &
+         BETA = 8.0_WP/3.0_WP
+
+    associate (x => q(1), y => q(2), z => q(3))
+      f(1) = SIGMA*(y-x)
+      f(2) = x*(RHO-z)-y
+      f(3) = x*y-BETA*z
+    end associate
+  end subroutine field
+
+  ! ========================
+  !    T  H  E    A  P  P
+  ! ========================
+
+  subroutine setup_graphics()
     integer :: screen_width, screen_height
     real(WP) :: dt, du, dv, u(2), v(2)
 
@@ -138,7 +189,7 @@ contains
     vp2 = sdl_rect(2*d1+d2,d1,d2,d2)
     vp3 = sdl_rect(3*d1+2*d2,d1,d2,d2)
 
-    call init_graphics('Lorenz Attractor', &
+    call init_graphics(TITLE, &
          WIDTH=screen_width,HEIGHT=screen_height)
 
     ! Margins of 5%
@@ -183,41 +234,44 @@ contains
     vp3%h = vp3%h+4
   end subroutine setup_graphics
 
-  ! Lorenz model
-  subroutine field(t,q,f)
-    real(WP), intent(in) :: t, q(:)
-    real(WP), intent(out) :: f(:)
+  subroutine show_params()
 
-    real(WP), parameter :: SIGMA= 10.0_WP, RHO = 28.0_WP, &
-         BETA = 8.0_WP/3.0_WP
+    character(len=*), parameter :: METHOD(4) = [ 'RK4', 'GBS', 'RKM', 'R15' ]
 
-    associate (x => q(1), y => q(2), z => q(3))
-      f(1) = SIGMA*(y-x)
-      f(2) = x*(RHO-z)-y
-      f(3) = x*y-BETA*z
-    end associate
-  end subroutine field
+    write(*,*) 'Current parameters:'
+    write(*,*)
+    write(*,*) 'USING '//METHOD(id_method)//' METHOD'
+    write(*,*)
+    write(*,*) 'T0 = ', t0
+    write(*,*) 'T1 = ', t1
+    write(*,*) 'H0 = ', h0
+    write(*,*)
+    write(*,*) 'DZ0 = ', dz0
+    write(*,*)
 
-  ! Cavalieri transformation R3 => R2
-  subroutine cavalieri(p,u,v)
-    real(WP), intent(in) :: p(:)
-    real(WP), intent(out) :: u, v
-    !
-    !  u = (-1/2)*x+y
-    !  v = (-1/2)*x+z
-    !
-    associate (x => p(1), y => p(2), z => p(3))
-      v = -0.5_WP*x
-      u = v+y
-      v = v+z
-    end associate
-  end subroutine cavalieri
+    if (id_method /= 1) then
+       write(*,*) 'LL = ', ll, '(', 10.0_WP ** (-ll), ')'
+       write(*,*)
+    end if
+
+    write(*,*) 'X0 = ', y0(1)
+    write(*,*) 'Y0 = ', y0(2)
+    write(*,*) 'Z0 = ', y0(3)
+    write(*,*)
+    write(*,*) 'U_MIN = ', u_min
+    write(*,*) 'U_MAX = ', u_max
+    write(*,*) 'V_MIN = ', v_min
+    write(*,*) 'V_MAX = ', v_max
+    write(*,*)
+    write(*,*) 'Z1 = ', z1
+    write(*,*) 'Z2 = ', z2
+
+    write(*,*) 'D1 = ', d1
+    write(*,*) 'D2 = ', d2
+    write(*,*)
+  end subroutine show_params
 
   subroutine solve()
-    use ode_integrator, only: ode_step => step
-    use SDL2_app, only: quit
-    use SDL2_shading, only: color_rgb_t
-
     real(WP), parameter :: DZ_BIFURCATION = 0.1_WP
 
     ! P(:) is the solution plotted in uv-P plot map, Q(:) is the
@@ -225,9 +279,6 @@ contains
     ! 1E-5 (more precisely in Z(t=0))
     real(WP) :: h, t, t_save, tp, p(NEQ), q(NEQ), delta_z
     logical :: last, not_bifurcation
-
-    type(color_rgb_t) :: color1 = color_rgb_t(0,0,0), &
-         color2 = color_rgb_t(0,0,0), color3 = color_rgb_t(0,0,0)
 
     ! Initial conditions
     last = .false.
@@ -247,9 +298,7 @@ contains
 
     ! By defaulta RED, BLUE and BROWN, in dark version to be used before
     ! bifurcation
-    color1 = color_rgb_t(128,0,0)
-    color2 = color_rgb_t(0,0,128)
-    color3 = color_rgb_t(128,128,0)
+    color => colors_dark
 
     do
        ! Plot current state
@@ -289,30 +338,27 @@ contains
 
           ! RED, BLUE and BROWN, in light version to be used after
           ! bifurcation
-          color1 = color_rgb_t(255,0,0)
-          color2 = color_rgb_t(0,0,255)
-          color3 = color_rgb_t(255,255,0)
+          color => colors_light
        end if
     end do
 
   contains
 
     subroutine display()
-      use SDL2_app, only: select_map, draw_point, set_rgba_color, refresh
       real(WP) :: u = 0, v = 0
 
       call select_map(1)
-      call set_rgba_color(color1%r,color1%g,color1%b)
+      call set_color(color(1))
       call draw_point(t,delta_z)
 
       call cavalieri(p,u,v)
       call select_map(2)
-      call set_rgba_color(color2%r,color2%g,color2%b)
+      call set_color(color(2))
       call draw_point(u,v)
 
       call cavalieri(q,u,v)
       call select_map(3)
-      call set_rgba_color(color3%r,color3%g,color3%b)
+      call set_color(color(3))
       call draw_point(u,v)
 
       call refresh()
@@ -321,22 +367,19 @@ contains
   end subroutine solve
 
   subroutine run()
-    use ode_integrator, only: ode_on, ode_off
-    use SDL2_app, only: clear_screen, close_graphics, draw_rect, &
-         set_rgba_color, QUIT_EVENT, get_event, quit, select_map
-
-    integer :: ievent = -1000
+    integer :: ievent
 
     ! Initialize ODE before graphics, if you can...
     call ode_on(NEQ,field,METHOD=id_method,ACCURACY=ll)
 
     call setup_graphics()
+    call show_params()
 
     ! We need to reset IEVENT if we want to restart the run
     ievent = -1000
     do while (ievent /= QUIT_EVENT)
        call clear_screen()
-       call set_rgba_color(0,255,255)     ! LIGHTCYAN
+       call set_color(LCYAN)
 
        call select_map(0)
        call draw_rect(vp1)
@@ -358,69 +401,41 @@ contains
     call ode_off()
   end subroutine run
 
-  subroutine show_params()
-
-    character(len=*), parameter :: METHOD(4) = [ 'RK4', 'GBS', 'RKM', 'R15' ]
-
-    write(*,*) 'Current parameters:'
-    write(*,*)
-    write(*,*) 'USING '//METHOD(id_method)//' METHOD'
-    write(*,*)
-    write(*,*) 'T0 = ', t0
-    write(*,*) 'T1 = ', t1
-    write(*,*) 'H0 = ', h0
-    write(*,*)
-    write(*,*) 'DZ0 = ', dz0
-    write(*,*)
-
-    if (id_method /= 1) then
-       write(*,*) 'LL = ', ll, '(', 10.0_WP ** (-ll), ')'
-       write(*,*)
-    end if
-
-    write(*,*) 'X0 = ', y0(1)
-    write(*,*) 'Y0 = ', y0(2)
-    write(*,*) 'Z0 = ', y0(3)
-    write(*,*)
-    write(*,*) 'U_MIN = ', u_min
-    write(*,*) 'U_MAX = ', u_max
-    write(*,*) 'V_MIN = ', v_min
-    write(*,*) 'V_MAX = ', v_max
-    write(*,*)
-    write(*,*) 'Z1 = ', z1
-    write(*,*) 'Z2 = ', z2
-
-    write(*,*) 'D1 = ', d1
-    write(*,*) 'D2 = ', d2
-    write(*,*)
-  end subroutine show_params
+  ! ================
+  !    M  E  N  U
+  ! ================
 
   subroutine show_menu()
     write(*,*) 'Choose item:'
     write(*,*) '  M : Method'
+    write(*,*)
     write(*,*) '  T : Time Interval'
     write(*,*) '  H : Step'
+    write(*,*)
     write(*,*) '  D : Z(0) Difference'
+    write(*,*)
 
     if (id_method /= 1) then
        write(*,*) '  L : ACCURACY (LL)'
+       write(*,*)
     end if
 
     write(*,*) '  Y : Y(0) Condition'
+    write(*,*)
     write(*,*) '  B : U-V Boundaries'
     write(*,*) '  Z : Z Interval in T-Z Plot'
+    write(*,*)
     write(*,*) '  S : Screen Size'
+    write(*,*)
     write(*,*) '  R : RUN'
     write(*,*) '  Q : QUIT'
   end subroutine show_menu
 
-  subroutine process_menu(ikey)
-    use getdata, only: get
+  subroutine process_menu(key)
+    character, intent(in) :: key
 
-    integer, intent(in) :: ikey
-
-    select case (ikey)
-    case (ichar('M'))
+    select case (key)
+    case ('M')
        write(*,*) 'Choose the method:'
        write(*,*) '  1 : RK4'
        write(*,*) '  2 : GBS'
@@ -430,36 +445,36 @@ contains
 
        ! Correction so that ID_METHOD is always in [1,4]
        id_method = mod(id_method-1,4)+1
-    case (ichar('T'))
+    case ('T')
        call get('T0 = ',t0)
        call get('T1 = ',t1)
-    case (ichar('H'))
+    case ('H')
        call get('H0 = ',h0)
-    case (ichar('D'))
+    case ('D')
        call get('DZ0 = ',dz0)
        if (dz0 > 1E-5_WP) stop ': DZ0 too big parameter (PROCESS_MENU).'
-    case (ichar('Y'))
+    case ('Y')
        call get('X0 = ',y0(1))
        call get('Y0 = ',y0(2))
        call get('Z0 = ',y0(3))
-    case (ichar('B'))
+    case ('B')
        call get('U_MIN =',u_min)
        call get('U_MAX =',u_max)
        call get('V_MIN =',v_min)
        call get('V_MAX =',v_max)
-    case (ichar('Z'))
+    case ('Z')
        call get('Z1 =',z1)
        call get('Z2 =',z2)
-    case (ichar('S'))
+    case ('S')
        call get('D1 (pixel) = ',d1)
        call get('D2 (pixel) = ',d2)
 
-    case (ichar('R'))
+    case ('R')
        call run()
     end select
 
     if (id_method /= 1) then
-       if (ikey == ichar('L')) call get('LL = ',ll)
+       if (key == 'L') call get('LL = ',ll)
        if ((id_method /= 4 .and. ll > 13) .or. &
             (id_method == 4 .and. ll > 20)) &
             stop ': LL too big parameter (PROCESS_MENU).'
@@ -469,34 +484,31 @@ contains
   end subroutine process_menu
 
   subroutine app_menu()
-    use getdata, only: get
+    character :: key
 
-    character :: key = 'R'
-    integer :: ikey = ichar('R') ! Default
-
-    do while (ikey /= ichar('Q'))
-       call show_params()
+    do
        call show_menu()
 
+       ! Default PROMPT
+       key = 'R'
        call get('Choice :',key)
 
        ! Convert in upcase if not
-       if ('a' <= key .and. key <= 'z') then
-          ikey = ichar(key)-32
-       else
-          ikey = ichar(key)
-       end if
+       if ('a' <= key .and. key <= 'z') key = char(ichar(key)-32)
+
+       if (key == 'Q') exit
 
        write(*,*)
 
-       call process_menu(ikey)
+       call process_menu(key)
     end do
-    write(*,*) 'All done.'
   end subroutine app_menu
 end module lorenz_attractor_lib
 
 program lorenz_attractor
   use lorenz_attractor_lib
+
+  implicit none
 
   call app_menu()
 end program lorenz_attractor
