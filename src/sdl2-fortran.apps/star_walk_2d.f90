@@ -2,7 +2,7 @@
 ! Author: ANGELO GRAZIOSI
 !
 !   created   : Jun 26, 2023
-!   last edit : Aug 21, 2023
+!   last edit : Aug 23, 2023
 !
 !   Star Walk in 2D of NPOINTS
 !
@@ -80,7 +80,7 @@
 !       -Wall -std=f2018 [-fmax-errors=1] \
 !       [-I ...] -O3 [`sdl2-config --cflags`] -J ../../modules \
 !       ../../basic-modules/{{kind,math}_consts,getdata,nicelabels}.f90 \
-!       $SDL2F90 ../SDL2_app.f90 \
+!       $SDL2F90 ../SDL2_{app,shading}.f90 \
 !       star_walk_2d.f90 -o star_walk_2d$EXE $LIBS; \
 !   rm -rf *.mod
 !
@@ -142,23 +142,17 @@
 !   Maybe the same considerations hold for GNU/Linux and macOS.
 !
 
-module app_lib
+module star_walk_2d_lib
   use :: kind_consts, only: WP
   use :: getdata, only: get
   use :: SDL2_app, only: init_graphics, close_graphics, QUIT_EVENT, &
-       get_event, quit, draw_point, set_color, clear_screen, refresh
+       get_event, quit, draw_point, draw_circle, draw_ellipse, set_color, &
+       clear_screen, refresh, fill_circle
+  use :: SDL2_shading, only: LRED, LGREEN, LBLUE, YELLOW, WHITE, &
+       BORLAND_PALETTE
 
   implicit none
   private
-
-  ! Some useful color
-  integer, parameter :: RED = int(z'FF0000FF')
-  integer, parameter :: GREEN = int(z'FF00FF00')
-  integer, parameter :: BLUE = int(z'FFFF0000')
-  integer, parameter :: YELLOW = ior(RED,GREEN)
-  integer, parameter :: MAGENTA = ior(RED,BLUE)
-  integer, parameter :: CYAN = ior(GREEN,BLUE)
-  integer, parameter :: WHITE = ior(YELLOW,BLUE)
 
   character(len=*), parameter :: TITLE = 'The Star Walk in 2D'
   character(len=*), parameter :: FMT = '(*(g0,1x))'
@@ -248,17 +242,22 @@ contains
   end subroutine show_params
 
   subroutine draw_logo()
-    use :: SDL2_app, only: draw_circle, draw_ellipse, refresh
+    integer, save :: icolor = 0
 
-    call set_color(RED)
+    call set_color(LRED)
     call draw_ellipse(screen_width/2,screen_height/2,250,100)
-    call set_color(GREEN)
+    call set_color(LGREEN)
     call draw_ellipse(screen_width/2,screen_height/2,100,250)
-    call set_color(BLUE)
+    call set_color(LBLUE)
     call draw_circle(screen_width/2,screen_height/2,250)
     call set_color(WHITE)
     call draw_circle(screen_width/2,screen_height/2,100)
+
+    call set_color(BORLAND_PALETTE(icolor))
+    call fill_circle(screen_width/2,screen_height/2,98)
     call refresh()
+
+    icolor = mod(icolor+1,16)
   end subroutine draw_logo
 
   subroutine paint_screen()
@@ -542,10 +541,10 @@ contains
        call process_menu(key)
     end do
   end subroutine app_menu
-end module app_lib
+end module star_walk_2d_lib
 
 program star_walk_2d
-  use :: app_lib
+  use :: star_walk_2d_lib
 
   implicit none
 
