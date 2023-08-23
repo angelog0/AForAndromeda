@@ -2,7 +2,7 @@
 ! Author: ANGELO GRAZIOSI
 !
 !   created   : May 02, 2015
-!   last edit : Aug 23, 2023
+!   last edit : Aug 24, 2023
 !
 !   Lorenz Attractor
 !
@@ -97,7 +97,7 @@ module lorenz_attractor_lib
        select_map, set_map_window, set_map_viewport, &
        init_graphics, close_graphics, clear_screen, &
        draw_point, draw_rect, set_color, refresh
-  use :: SDL2_shading, only: RED, BLUE, BROWN, LRED, LBLUE, LCYAN, YELLOW
+  use :: SDL2_shading, only: RED, GRAY, BROWN, LRED, LGRAY, LCYAN, YELLOW
 
   implicit none
   private
@@ -131,8 +131,8 @@ module lorenz_attractor_lib
   type(sdl_rect) :: vp1 = sdl_rect(0,0,0,0), vp2 = sdl_rect(0,0,0,0), &
        vp3 = sdl_rect(0,0,0,0)
 
-  integer, target :: colors_dark(3) = [RED, BLUE, BROWN]
-  integer, target :: colors_light(3) = [LRED, LBLUE, YELLOW]
+  integer, target :: colors_dark(3) = [RED, GRAY, BROWN]
+  integer, target :: colors_light(3) = [LRED, LGRAY, YELLOW]
   integer, pointer :: color(:) => null()
 
   public :: app_menu
@@ -296,7 +296,7 @@ contains
     ! i.e. BIFURCATION = .false.
     not_bifurcation = .true.
 
-    ! By defaulta RED, BLUE and BROWN, in dark version to be used before
+    ! By defaulta RED, GRAY and BROWN, in dark version to be used before
     ! bifurcation
     color => colors_dark
 
@@ -336,7 +336,7 @@ contains
           ! i.e. BIFURCATION = .true.
           not_bifurcation = .false.
 
-          ! RED, BLUE and BROWN, in light version to be used after
+          ! RED, GRAY and BROWN, in light version to be used after
           ! bifurcation
           color => colors_light
        end if
