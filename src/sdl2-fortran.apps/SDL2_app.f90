@@ -1293,7 +1293,7 @@ contains
   end subroutine draw_line_WC
 
   subroutine draw_lines_DC(points,count)
-    type(sdl_point), intent(in) :: points(:)
+    type(sdl_point), intent(in) :: points(*) ! To avoid array-temporaries
     integer, intent(in) :: count
 
     rc = sdl_render_draw_lines(renderer,points,count)
@@ -1338,7 +1338,7 @@ contains
   end subroutine draw_point_WC
 
   subroutine draw_points_DC(points,count)
-    type(sdl_point), intent(in) :: points(:)
+    type(sdl_point), intent(in) :: points(*) ! To avoid array-temporaries
     integer, intent(in) :: count
 
     rc = sdl_render_draw_points(renderer,points,count)
@@ -1407,7 +1407,7 @@ contains
   end subroutine draw_rect_WC
 
   subroutine draw_rects(rects,count)
-    type(sdl_rect), intent(in) :: rects(:)
+    type(sdl_rect), intent(in) :: rects(*) ! To avoid array-temporaries
     integer, intent(in) :: count
 
     rc = sdl_render_draw_rects(renderer,rects,count)
@@ -1420,7 +1420,7 @@ contains
   end subroutine fill_rect
 
   subroutine fill_rects(rects,count)
-    type(sdl_rect), intent(in) :: rects(:)
+    type(sdl_rect), intent(in) :: rects(*) ! To avoid array-temporaries
     integer, intent(in) :: count
 
     rc = sdl_render_fill_rects(renderer,rects,count)
