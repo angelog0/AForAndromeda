@@ -372,7 +372,7 @@ contains
 
     ! On GNU/Linux Mint the apps "flicker" as if things outside the
     ! "do while (ievent /= QUIT_EVENT)" loop were esecuted in parallel
-    ! to the things onside the loop.
+    ! to the things inside the loop.
     !
     ! renderer = sdl_create_renderer(window,-1, &
     !      ior(SDL_RENDERER_ACCELERATED, SDL_RENDERER_TARGETTEXTURE))
