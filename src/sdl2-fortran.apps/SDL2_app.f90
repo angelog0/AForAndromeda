@@ -2,7 +2,7 @@
 ! Author: ANGELO GRAZIOSI
 !
 !   created   : Sep 08, 2018
-!   last edit : Aug 22, 2023
+!   last edit : Aug 24, 2023
 !
 !   Module to create SDL2 Fortran applications in DC or WC
 !
@@ -369,10 +369,16 @@ contains
     ! Create renderer. See https://wiki.libsdl.org/SDL2/SDL_RendererFlags
     !renderer = sdl_create_renderer(window,-1,0)
     !
-    renderer = sdl_create_renderer(window,-1, &
-         ior(SDL_RENDERER_ACCELERATED, SDL_RENDERER_TARGETTEXTURE))
+
+    ! On GNU/Linux Mint the apps "flicker" as if things outside the
+    ! "do while (ievent /= QUIT_EVENT)" loop were esecuted in parallel
+    ! to the things onside the loop.
     !
-    !renderer = sdl_create_renderer(window,-1,SDL_RENDERER_SOFTWARE)
+    ! renderer = sdl_create_renderer(window,-1, &
+    !      ior(SDL_RENDERER_ACCELERATED, SDL_RENDERER_TARGETTEXTURE))
+    !
+
+    renderer = sdl_create_renderer(window,-1,SDL_RENDERER_SOFTWARE)
 
     if (.not. c_associated(renderer)) then
        write(*,*) 'SDL Error (RENDERER): ', sdl_get_error()
