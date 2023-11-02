@@ -6,6 +6,10 @@
 !
 !   https://annapurna.ifj.edu.pl/~golec/data/research/files/cernlib.pdf
 !
+! CERNLIB is still alive!
+!
+!   https://cernlib.web.cern.ch/download/2023_source/README
+!
 
 module types
 
