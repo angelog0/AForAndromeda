@@ -2,7 +2,7 @@
 ! Author: ANGELO GRAZIOSI
 !
 !   created   : Jun 26, 2023
-!   last edit : Aug 23, 2023
+!   last edit : Jan 01, 2024
 !
 !   Star Walk in 2D of NSTARS
 !
@@ -24,9 +24,9 @@
 !
 !   this means that G*M == 1 ==> M = M(SUN)/mu(SUN) ~ 3390*M(SUN).  If
 !   the step is 1, i.e. 1 UA, assuming s == 1 UA = (1/2)g*t**2, it
-!   would be t = sqrt(2/g). With 5000 stars in a square of side 1000
+!   would be t = sqrt(2/g). With 5000 points in a square of side 1000
 !   (UA), we would have sqrt(5000) in a side of 1000 (UA), i.e. about
-!   1000/sqrt(5000) ~ 14 UA between two near stars, and this would
+!   1000/sqrt(5000) ~ 14 UA between two near points, and this would
 !   give g = GM/r**2 ~ 1/14**2, i.e. t = sqrt(2/g) ~ sqrt(2*14**2) ~
 !   20 D. In this model 1 step (1 UA) is done in about 20 D.
 !
@@ -38,6 +38,23 @@
 !   equations of motion are the same. We have here all the stars with
 !   the same unit mass: M = 1. So if M = 1 g and L = 1 cm, T = 1.08 h;
 !   if M = 1 MSUN and L = 1 pc, T = 1.43E7 yr, and so on.
+!
+!   To fix the ideas, we can assume L = 1 pc = 3E16 m, M = 2E30 kg and
+!   T = 14.3E6 yr. In these units, a spedd of 1 (L/T) would be
+!
+!     V = 1 (L/T) = 1 pc / (14.3E6 yr) ~ 66.4 (m/s)
+!
+!   Then an example to be run would be:
+!
+!     NSTARS     = 5000
+!     NSOUT      = 100
+!     STEP       = 1     (pc every 14.3E6 yr)
+!     XSIZE      = 300   (pc)
+!     YSIZE      = 300   (pc)
+!     VIEW_XSIZE = 300   (pc)
+!     VIEW_YSIZE = 300   (pc)
+!
+!   Leave it run for >> 10000 steps.
 !
 ! REFERENCES
 !
@@ -71,18 +88,16 @@
 !
 ! HOW TO BUILD THE APP (MSYS2/MINGW64, GNU/Linux, macOS)
 !
-!   cd sdl2-fortran.apps
+!   cd ~/programming/sdl2-fortran.apps/star_walk_2d
 !
-!   git clone https://github.com/interkosmos/fortran-sdl2.git
-!
-!   rm -rf *.mod; \
+!   rm -rf {*.mod,../../modules/*}; \
 !     gfortran[-mp-X] [-g3 -fbacktrace -fcheck=all] [-march=native] \
 !       -Wall -std=f2018 [-fmax-errors=1] \
 !       [-I ...] -O3 [`sdl2-config --cflags`] -J ../../modules \
 !       ../../basic-modules/{{kind,math}_consts,getdata,nicelabels}.f90 \
-!       $SDL2F90 SDL2_{app,shading}.f90 \
+!       $SDL2F90 ../SDL2_{app,shading}.f90 \
 !       star_walk_2d.f90 -o star_walk_2d$EXE $LIBS; \
-!   rm -rf *.mod
+!   rm -rf {*.mod,../../modules/*}
 !
 !   ./star_walk_2d$EXE
 !
@@ -96,7 +111,7 @@
 !
 !   and (all platform):
 !
-!     SDL2F90 = fortran-sdl2/src/{c_util,sdl2/{sdl2_stdinc,sdl2_audio,\
+!     SDL2F90 = ../../sdl2-fortran/src/{c_util,sdl2/{sdl2_stdinc,sdl2_audio,\
 !       sdl2_blendmode,sdl2_cpuinfo,sdl2_gamecontroller,sdl2_error,\
 !       sdl2_events,sdl2_filesystem,sdl2_hints,sdl2_joystick,sdl2_keyboard,\
 !       sdl2_log,sdl2_messagebox,sdl2_rect,sdl2_pixels,sdl2_platform,\
@@ -215,6 +230,7 @@ contains
 
   end subroutine setup_params
 
+  ! https://stackoverflow.com/questions/26076557/program-received-signal-sigsegv-segmentation-fault-invalid-memory-reference
   subroutine shutdown_params()
     if (allocated(p)) deallocate(p,STAT=ierr)
     if (ierr /= 0) stop ': Deallocation failure for P(:,:) (SHUTDOWN_PARAMS).'
