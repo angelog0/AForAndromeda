@@ -9,10 +9,10 @@
 ! DESCRIPTION
 !
 !   We draw the 2D star walk using SDL2-Fortran interface. The stars
-!   are initially distribuited at random in a rectangular region then
-!   the gravitational field is computed at the position of each star
-!   and the star moves one STEP in the direction and the verse
-!   indicated by the field. We assume for all stars
+!   are initially distribuited at random in a rectangular region. The
+!   gravitational field is computed at the position of each star and
+!   the star moves one STEP in the direction and the verse indicated
+!   by the field. We assume for all stars
 !
 !     mu(i) = G*M(i) == 1
 !
@@ -24,7 +24,7 @@
 !
 !   this means that G*M == 1 ==> M = M(SUN)/mu(SUN) ~ 3390*M(SUN).  If
 !   the step is 1, i.e. 1 UA, assuming s == 1 UA = (1/2)g*t**2, it
-!   would be t = sqrt(2/g). With 5000 points in a square of side 1000
+!   would be t = sqrt(2/g). With 5000 stars in a square of side 1000
 !   (UA), we would have sqrt(5000) in a side of 1000 (UA), i.e. about
 !   1000/sqrt(5000) ~ 14 UA between two near points, and this would
 !   give g = GM/r**2 ~ 1/14**2, i.e. t = sqrt(2/g) ~ sqrt(2*14**2) ~
@@ -88,16 +88,18 @@
 !
 ! HOW TO BUILD THE APP (MSYS2/MINGW64, GNU/Linux, macOS)
 !
-!   cd ~/programming/sdl2-fortran.apps/star_walk_2d
+!   cd sdl2-fortran.apps
 !
-!   rm -rf {*.mod,../../modules/*}; \
+!   git clone https://github.com/interkosmos/fortran-sdl2.git
+!
+!   rm -rf *.mod; \
 !     gfortran[-mp-X] [-g3 -fbacktrace -fcheck=all] [-march=native] \
 !       -Wall -std=f2018 [-fmax-errors=1] \
 !       [-I ...] -O3 [`sdl2-config --cflags`] -J ../../modules \
 !       ../../basic-modules/{{kind,math}_consts,getdata,nicelabels}.f90 \
-!       $SDL2F90 ../SDL2_{app,shading}.f90 \
+!       $SDL2F90 SDL2_{app,shading}.f90 \
 !       star_walk_2d.f90 -o star_walk_2d$EXE $LIBS; \
-!   rm -rf {*.mod,../../modules/*}
+!   rm -rf *.mod
 !
 !   ./star_walk_2d$EXE
 !
@@ -111,7 +113,7 @@
 !
 !   and (all platform):
 !
-!     SDL2F90 = ../../sdl2-fortran/src/{c_util,sdl2/{sdl2_stdinc,sdl2_audio,\
+!     SDL2F90 = fortran-sdl2/src/{c_util,sdl2/{sdl2_stdinc,sdl2_audio,\
 !       sdl2_blendmode,sdl2_cpuinfo,sdl2_gamecontroller,sdl2_error,\
 !       sdl2_events,sdl2_filesystem,sdl2_hints,sdl2_joystick,sdl2_keyboard,\
 !       sdl2_log,sdl2_messagebox,sdl2_rect,sdl2_pixels,sdl2_platform,\
