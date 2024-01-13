@@ -1,0 +1,288 @@
+//
+// (Partial) Fortran Interface to the Windows API Library
+// by Angelo Graziosi
+//
+// RC file for "poisson2D" app
+//
+
+#define IDI_POISSON2D 1
+
+IDI_POISSON2D ICON DISCARDABLE "../common_icons/smiling_sun.ico"
+
+#define IDM_MAINMENU        9000
+#define IDM_FILE_EXIT       9010
+#define IDM_DATA_NDIV       9020
+#define IDM_DATA_MAXI       9021
+#define IDM_DATA_EPS        9022
+#define IDM_DATA_OMEGA      9023
+#define IDM_DATA_XBOUNDS    9024
+#define IDM_DATA_YBOUNDS    9025
+#define IDM_DATA_NSOUT      9026
+#define IDM_DATA_PHILIMITS  9027
+#define IDM_OPTIONS_CFGTYPE 9030
+#define IDM_OPTIONS_FLDTYPE 9031
+#define IDM_RUNAPP          9040
+#define IDM_HELP_DISCLAIMER 9998
+#define IDM_HELP_ABOUT      9999
+
+IDM_MAINMENU MENU DISCARDABLE
+BEGIN
+    POPUP "&File"
+    BEGIN
+        MENUITEM "E&xit...", IDM_FILE_EXIT
+    END
+
+    POPUP "&Data"
+    BEGIN
+        MENUITEM  "Number of lattice &divisions...", IDM_DATA_NDIV
+    	MENUITEM  "Maximum number of &iterations...", IDM_DATA_MAXI
+    	MENUITEM  "&Precision for convergence...", IDM_DATA_EPS
+    	MENUITEM  "&Relaxation parameter...", IDM_DATA_OMEGA
+    	MENUITEM SEPARATOR
+    	MENUITEM  "&X-boundary conditions...", IDM_DATA_XBOUNDS
+    	MENUITEM  "&Y-boundary conditions...", IDM_DATA_YBOUNDS
+	MENUITEM SEPARATOR
+	MENUITEM  "Iteration steps for &output...", IDM_DATA_NSOUT
+	MENUITEM  "Color &scale limits...", IDM_DATA_PHILIMITS
+    END
+
+    POPUP "&Options"
+    BEGIN
+        MENUITEM  "&Problem solving...", IDM_OPTIONS_CFGTYPE
+	MENUITEM  "Plotting &field...", IDM_OPTIONS_FLDTYPE
+    END
+
+    POPUP "&Run Application"
+    BEGIN
+        MENUITEM "R&un", IDM_RUNAPP
+    END
+
+    POPUP "&Help"
+    BEGIN
+        MENUITEM "&Disclaimer...", IDM_HELP_DISCLAIMER
+	MENUITEM "&About...", IDM_HELP_ABOUT
+    END
+END
+
+#include <windows.h>
+
+#define IDC_STATIC -1
+
+#define IDC_CTEXT "The Dirichlet problem for Poisson equation in 2D."
+
+#define IDD_DATA_NDIV  100
+#define IDC_NDIV       101
+
+IDD_DATA_NDIV DIALOG DISCARDABLE  0, 0, 284, 77
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Number of lattice divisions"
+FONT 8, "MS Sans Serif"
+BEGIN
+    DEFPUSHBUTTON   "OK", IDOK, 227, 7, 50, 14
+    PUSHBUTTON      "Cancel", IDCANCEL, 227, 24, 50, 14
+    CTEXT           IDC_CTEXT, IDC_STATIC, 7, 7, 153, 18
+    GROUPBOX        "Number of lattice &divisions", IDC_STATIC, 13, 30, 186, 34
+    EDITTEXT        IDC_NDIV, 35, 43, 60, 14, ES_AUTOHSCROLL
+    LTEXT           " ;-) ", IDC_STATIC, 97, 45, 20, 8
+END
+
+#define IDD_DATA_MAXI  200
+#define IDC_MAXI       201
+
+IDD_DATA_MAXI DIALOG DISCARDABLE  0, 0, 284, 77
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Maximum number of iterations"
+FONT 8, "MS Sans Serif"
+BEGIN
+    DEFPUSHBUTTON   "OK", IDOK, 227, 7, 50, 14
+    PUSHBUTTON      "Cancel", IDCANCEL, 227, 24, 50, 14
+    CTEXT           IDC_CTEXT, IDC_STATIC, 7, 7, 153, 18
+    GROUPBOX        "Maximum number of &iterations",
+    		    IDC_STATIC, 13, 30, 186, 34
+    EDITTEXT        IDC_MAXI, 35, 43, 60, 14, ES_AUTOHSCROLL
+    LTEXT           " ;-) ", IDC_STATIC, 97, 45, 20, 8
+END
+
+#define IDD_DATA_EPS  300
+#define IDC_EPS       301
+
+IDD_DATA_EPS DIALOG DISCARDABLE  0, 0, 284, 77
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Precision for convergence"
+FONT 8, "MS Sans Serif"
+BEGIN
+    DEFPUSHBUTTON   "OK", IDOK, 227, 7, 50, 14
+    PUSHBUTTON      "Cancel", IDCANCEL, 227, 24, 50, 14
+    CTEXT           IDC_CTEXT, IDC_STATIC, 7, 7, 153, 18
+    GROUPBOX        "&Precision for convergence", IDC_STATIC, 13, 30, 186, 34
+    EDITTEXT        IDC_EPS, 35, 43, 60, 14, ES_AUTOHSCROLL
+    LTEXT           " ;-) ", IDC_STATIC, 97, 45, 20, 8
+END
+
+#define IDD_DATA_OMEGA  400
+#define IDC_OMEGA       401
+
+IDD_DATA_OMEGA DIALOG DISCARDABLE  0, 0, 284, 77
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Relaxation parameter"
+FONT 8, "MS Sans Serif"
+BEGIN
+    DEFPUSHBUTTON   "OK", IDOK, 227, 7, 50, 14
+    PUSHBUTTON      "Cancel", IDCANCEL, 227, 24, 50, 14
+    CTEXT           IDC_CTEXT, IDC_STATIC, 7, 7, 153, 18
+    GROUPBOX        "&Relaxation parameter", IDC_STATIC, 13, 30, 186, 34
+    EDITTEXT        IDC_OMEGA, 35, 43, 60, 14, ES_AUTOHSCROLL
+    LTEXT           " ;-) ", IDC_STATIC, 97, 45, 20, 8
+END
+
+#define IDD_DATA_XBOUNDS  500
+#define IDC_ULEFT         501
+#define IDC_URIGHT        502
+
+IDD_DATA_XBOUNDS DIALOG DISCARDABLE  0, 0, 284, 97
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "X-boundary conditions"
+FONT 8, "MS Sans Serif"
+BEGIN
+    DEFPUSHBUTTON   "OK", IDOK, 227, 7, 50, 14
+    PUSHBUTTON      "Cancel", IDCANCEL, 227, 24, 50, 14
+    CTEXT           IDC_CTEXT, IDC_STATIC, 7, 7, 153, 18
+    GROUPBOX        "&X-boundary conditions", IDC_STATIC, 13, 30, 186, 54
+    LTEXT           "U(&L) : ", IDC_STATIC, 35, 45, 30, 8
+    EDITTEXT        IDC_ULEFT, 85, 43, 60, 14, ES_AUTOHSCROLL
+    LTEXT           " ;-) ", IDC_STATIC, 147, 45, 20, 8
+    LTEXT           "U(&R) : ", IDC_STATIC, 35, 65, 30, 8
+    EDITTEXT        IDC_URIGHT, 85, 63, 60, 14, ES_AUTOHSCROLL
+    LTEXT           " ;-) ", IDC_STATIC, 147, 65, 20, 8
+END
+
+#define IDD_DATA_YBOUNDS  600
+#define IDC_UBOTTOM       601
+#define IDC_UTOP          602
+
+IDD_DATA_YBOUNDS DIALOG DISCARDABLE  0, 0, 284, 97
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Y-boundary conditions"
+FONT 8, "MS Sans Serif"
+BEGIN
+    DEFPUSHBUTTON   "OK", IDOK, 227, 7, 50, 14
+    PUSHBUTTON      "Cancel", IDCANCEL, 227, 24, 50, 14
+    CTEXT           IDC_CTEXT, IDC_STATIC, 7, 7, 153, 18
+    GROUPBOX        "&Y-boundary conditions", IDC_STATIC, 13, 30, 186, 54
+    LTEXT           "U(&B) : ", IDC_STATIC, 35, 45, 30, 8
+    EDITTEXT        IDC_UBOTTOM, 85, 43, 60, 14, ES_AUTOHSCROLL
+    LTEXT           " ;-) ", IDC_STATIC, 147, 45, 20, 8
+    LTEXT           "U(&T) : ", IDC_STATIC, 35, 65, 30, 8
+    EDITTEXT        IDC_UTOP, 85, 63, 60, 14, ES_AUTOHSCROLL
+    LTEXT           " ;-) ", IDC_STATIC, 147, 65, 20, 8
+END
+
+#define IDD_DATA_NSOUT  700
+#define IDC_NSOUT       701
+
+IDD_DATA_NSOUT DIALOG DISCARDABLE  0, 0, 284, 77
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Iteration steps for output"
+FONT 8, "MS Sans Serif"
+BEGIN
+    DEFPUSHBUTTON   "OK", IDOK, 227, 7, 50, 14
+    PUSHBUTTON      "Cancel", IDCANCEL, 227, 24, 50, 14
+    CTEXT           IDC_CTEXT, IDC_STATIC, 7, 7, 153, 18
+    GROUPBOX        "Iteration steps for &output", IDC_STATIC, 13, 30, 186, 34
+    EDITTEXT        IDC_NSOUT, 35, 43, 60, 14, ES_AUTOHSCROLL
+    LTEXT           " ;-) ", IDC_STATIC, 97, 45, 20, 8
+END
+
+#define IDD_DATA_PHILIMITS  800
+#define IDC_PHIMIN          801
+#define IDC_PHIMAX          802
+
+IDD_DATA_PHILIMITS DIALOG DISCARDABLE  0, 0, 284, 97
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Color scale limits"
+FONT 8, "MS Sans Serif"
+BEGIN
+    DEFPUSHBUTTON   "OK", IDOK, 227, 7, 50, 14
+    PUSHBUTTON      "Cancel", IDCANCEL, 227, 24, 50, 14
+    CTEXT           IDC_CTEXT, IDC_STATIC, 7, 7, 153, 18
+    GROUPBOX        "Color &scale limits", IDC_STATIC, 13, 30, 186, 54
+    LTEXT           "M&IN : ", IDC_STATIC, 35, 45, 30, 8
+    EDITTEXT        IDC_PHIMIN, 85, 43, 60, 14, ES_AUTOHSCROLL
+    LTEXT           " ;-) ", IDC_STATIC, 147, 45, 20, 8
+    LTEXT           "M&AX : ", IDC_STATIC, 35, 65, 30, 8
+    EDITTEXT        IDC_PHIMAX, 85, 63, 60, 14, ES_AUTOHSCROLL
+    LTEXT           " ;-) ", IDC_STATIC, 147, 65, 20, 8
+END
+
+#define IDD_OPTIONS_CFGTYPE  900
+#define IDC_ONEBOX           901
+#define IDC_TWOBOX           902
+#define IDC_CONDENSER        903
+#define IDC_THREECHARGES     904
+#define IDC_CHARGEDLINE      905
+
+IDD_OPTIONS_CFGTYPE DIALOG DISCARDABLE  0, 0, 284, 157
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Problem solving"
+FONT 8, "MS Sans Serif"
+BEGIN
+    DEFPUSHBUTTON   "OK", IDOK, 227, 7, 50, 14
+    PUSHBUTTON      "Cancel", IDCANCEL, 227, 24, 50, 14
+    CTEXT           IDC_CTEXT, IDC_STATIC, 7, 7, 153, 18
+    GROUPBOX        "&Problem solving", IDC_STATIC, 13, 30, 186, 114
+    RADIOBUTTON     "&One Box", IDC_ONEBOX, 35, 45, 60, 8
+    RADIOBUTTON     "&Two Box", IDC_TWOBOX, 35, 65, 60, 8
+    RADIOBUTTON     "&Condenser", IDC_CONDENSER, 35, 85, 60, 8
+    RADIOBUTTON     "T&hree Charges", IDC_THREECHARGES, 35, 105, 60, 8
+    RADIOBUTTON     "Charged &Line", IDC_CHARGEDLINE, 35, 125, 60, 8
+END
+
+#define IDD_OPTIONS_FLDTYPE  950
+#define IDC_POTENTIAL        951
+#define IDC_GRADIENT         952
+
+IDD_OPTIONS_FLDTYPE DIALOG DISCARDABLE  0, 0, 284, 97
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Plotting field"
+FONT 8, "MS Sans Serif"
+BEGIN
+    DEFPUSHBUTTON   "OK", IDOK, 227, 7, 50, 14
+    PUSHBUTTON      "Cancel", IDCANCEL, 227, 24, 50, 14
+    CTEXT           IDC_CTEXT, IDC_STATIC, 7, 7, 153, 18
+    GROUPBOX        "Plotting &field", IDC_STATIC, 13, 30, 186, 54
+    RADIOBUTTON     "&Potential", IDC_POTENTIAL, 35, 45, 60, 8
+    RADIOBUTTON     "&Gradient", IDC_GRADIENT, 35, 65, 60, 8
+END
+
+#define IDD_DISCLAIMER  998
+
+IDD_DISCLAIMER DIALOG DISCARDABLE  0, 0, 319, 66
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Disclaimer Box"
+FONT 8, "MS Sans Serif"
+BEGIN
+    DEFPUSHBUTTON   "OK", IDOK, 254, 18, 50, 14
+    PUSHBUTTON      "Cancel", IDCANCEL, 254, 35, 50, 14
+    GROUPBOX        "Disclaimer...", IDC_STATIC, 7, 7, 305, 52
+    CTEXT           "It is distributed in the hope that it will be useful,\n"
+                    "but WITHOUT ANY WARRANTY; without even the implied "
+		    "warranty of\n"
+		    "MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.",
+                    IDC_STATIC, 16, 18, 224, 33
+END
+
+
+#define IDD_ABOUT  999
+
+IDD_ABOUT DIALOG DISCARDABLE  0, 0, 239, 66
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "About Box"
+FONT 8, "MS Sans Serif"
+BEGIN
+    DEFPUSHBUTTON   "OK", IDOK, 174, 18, 50, 14
+    PUSHBUTTON      "Cancel", IDCANCEL, 174, 35, 50, 14
+    GROUPBOX        "About this program...", IDC_STATIC, 7, 7, 225, 52
+    CTEXT           "A Solution for Poisson equation.\n\n"
+                    "by (C) Angelo Graziosi",
+                    IDC_STATIC, 16, 18, 144, 33
+END

@@ -13,6 +13,7 @@
 
 : ${FC=gfortran}
 : ${CXX=g++}
+: ${RC=windres}
 
 AFORANDROMEDA_DIR="$(pwd)"
 
@@ -26,6 +27,7 @@ BIN_DIR="${AFORANDROMEDA_DIR}/bin"
 FPARSER_DIR="${AFORANDROMEDA_DIR}/fparser-4.5.2"
 
 SDL2_FORTRAN_APPS_DIR="${AFORANDROMEDA_SRCDIR}/sdl2-fortran.apps"
+WIN32_FORTRAN_APPS_DIR="${AFORANDROMEDA_SRCDIR}/win32-fortran.apps"
 
 NBODY_DIR="${AFORANDROMEDA_SRCDIR}/N-Body"
 ODETS_DIR="${AFORANDROMEDA_SRCDIR}/ODE-Tests"
@@ -515,5 +517,26 @@ if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
           -L . -lFParser -lstdc++ -o ${program_name}${EXE}
     rm -rf *.mod
     mv ${program_name}${EXE} "${BIN_DIR}"
+    echo "done."
+fi
+
+## Windows apps
+
+cd "${WIN32_FORTRAN_APPS_DIR}"
+
+cd poisson2D.app
+
+program_name="poisson2D"
+if [ ! -f "${BIN_DIR}/${program_name}.exe" ] ; then
+    echo -n "Building ${program_name^^} ... "
+    rm -rf {*.mod,*.res}
+    ${RC} ${program_name}.rc -O coff -o ${program_name}.res
+    ${FC} -std=f2018 -O3 -Wall -Wall \
+          -Wno-unused-dummy-argument -Wno-maybe-uninitialized \
+          -static -mwindows ${BMODS_DIR}/{kind,math}_consts.f90 \
+          ../{win32,{basic,about,x,xy,radio}_box_m,win32app}.f90 \
+          ${program_name}.f90 ${program_name}.res -o ${program_name}.exe
+    rm -rf {*.mod,*.res}
+    mv ${program_name}.exe "${BIN_DIR}"
     echo "done."
 fi
