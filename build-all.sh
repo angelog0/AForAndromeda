@@ -6,9 +6,15 @@
 ##
 ##     ./build-all.sh
 ##
-## or (on macOS, for example after installing the right bash > 4.0)
+##   or (on macOS, for example after installing the right bash > 4.0)
 ##
 ##     FC=gfortran-mp-12 CXX=g++-mp-12 bash ./build-all.sh
+##
+##   We have removed the '-march=native' flag because it makes
+##   binaries NOT PORTABLE across the same OS with different
+##   processors. If you need it, maybe you ca run
+##
+##     FC='gfortran -march=native' ./build-all.sh
 ##
 
 : ${FC=gfortran}
@@ -374,7 +380,7 @@ program_name="calc_orbits"
 if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
     echo -n "Building ${program_name^^} ... "
     rm -rf *.mod
-    ${FC} -std=f2018 -O3 -march=native -funroll-loops -Wall \
+    ${FC} -std=f2018 -O3 -funroll-loops -Wall \
           -Wno-unused-dummy-argument \
           ${BMODS_DIR}/{{kind,math}_consts,ft_timer_m,getdata}.f90 \
           ${OMODS_DIR}/everhart_integrator.f90 \
@@ -389,7 +395,7 @@ program_name="process_orbits"
 if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
     echo -n "Building ${program_name^^} ... "
     rm -rf *.mod
-    ${FC} -std=f2018 -O3 -march=native -funroll-loops -Wall \
+    ${FC} -std=f2018 -O3 -funroll-loops -Wall \
           -Wno-unused-dummy-argument ${BMODS_DIR}/{kind,math}_consts.f90 \
           ${BMODS_DIR}/{ft_timer_m,getdata,julian_dates}.f90 \
           ${program_name}.f90 -o ${program_name}${EXE}
@@ -402,7 +408,7 @@ program_name="test_jsunp"
 if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
     echo -n "Building ${program_name^^} ... "
     rm -rf *.mod
-    ${FC} -std=f2018 -O3 -march=native -funroll-loops -Wall \
+    ${FC} -std=f2018 -O3 -funroll-loops -Wall \
           -Wno-unused-dummy-argument \
           ${BMODS_DIR}/{kind,math}_consts.f90 \
           ${OMODS_DIR}/{everhart_integrator,cernlib_integrators}.f90 \
@@ -418,7 +424,7 @@ program_name="apophis"
 if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
     echo -n "Building ${program_name^^} ... "
     rm -rf *.mod
-    ${FC} -std=f2018 -O3 -march=native -funroll-loops -Wall \
+    ${FC} -std=f2018 -O3 -funroll-loops -Wall \
           -Wno-unused-dummy-argument \
           ${BMODS_DIR}/{{kind,math}_consts,getdata,julian_dates,nicelabels,camera_view_m}.f90 \
           ${OMODS_DIR}/everhart_integrator.f90 \
@@ -435,7 +441,7 @@ program_name="three_bodies"
 if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
     echo -n "Building ${program_name^^} ... "
     rm -rf *.mod
-    ${FC} -std=f2018 -O3 -march=native -funroll-loops -Wall \
+    ${FC} -std=f2018 -O3 -funroll-loops -Wall \
           -Wno-unused-dummy-argument \
           ${BMODS_DIR}/{{kind,math}_consts,ft_timer_m,getdata,nicelabels,camera_view_m}.f90 \
           ${OMODS_DIR}/{everhart,ode}_integrator.f90 \
@@ -452,7 +458,7 @@ program_name="Euler"
 if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
     echo -n "Building ${program_name^^} ... "
     rm -rf *.mod
-    ${FC} -std=f2018 -O3 -march=native -funroll-loops -Wall \
+    ${FC} -std=f2018 -O3 -funroll-loops -Wall \
           -Wno-unused-dummy-argument \
           ${BMODS_DIR}/{{kind,math}_consts,getdata}.f90 \
           ${OMODS_DIR}/{everhart,ode}_integrator.f90 \
@@ -466,7 +472,7 @@ program_name="Filippi"
 if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
     echo -n "Building ${program_name^^} ... "
     rm -rf *.mod
-    ${FC} -std=f2018 -O3 -march=native -funroll-loops -Wall \
+    ${FC} -std=f2018 -O3 -funroll-loops -Wall \
           -Wno-unused-dummy-argument \
           ${BMODS_DIR}/{{kind,math}_consts,getdata}.f90 \
           ${OMODS_DIR}/{everhart,ode}_integrator.f90 \
@@ -480,7 +486,7 @@ program_name="decay_field"
 if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
     echo -n "Building ${program_name^^} ... "
     rm -rf *.mod
-    ${FC} -std=f2018 -O3 -march=native -funroll-loops -Wall \
+    ${FC} -std=f2018 -O3 -funroll-loops -Wall \
           -Wno-unused-dummy-argument \
           ${BMODS_DIR}/kind_consts.f90 \
           ${OMODS_DIR}/{everhart,ode}_integrator.f90 \
@@ -496,7 +502,7 @@ program_name="thomas_fermi-ra15"
 if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
     echo -n "Building ${program_name^^} ... "
     rm -rf *.mod
-    ${FC} -std=f2018 -O3 -march=native -funroll-loops -Wall \
+    ${FC} -std=f2018 -O3 -funroll-loops -Wall \
           -Wno-unused-dummy-argument \
           ${BMODS_DIR}/{{kind,math}_consts,ft_timer_m,getdata}.f90 \
           ${OMODS_DIR}/everhart_integrator.f90 \
