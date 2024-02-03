@@ -526,7 +526,7 @@ if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
     echo "done."
 fi
 
-## Do not build Windows app on other OS
+## Do not build Windows app on other OSes
 if [ "${MINGW64_OS}" != "" ] ; then
 
     ## Windows apps
