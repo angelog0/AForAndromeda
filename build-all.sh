@@ -526,23 +526,28 @@ if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
     echo "done."
 fi
 
-## Windows apps
+## Do not build Windows app on others OS
+if [ "${MINGW64_OS}" != "" ] ; then
 
-cd "${WIN32_FORTRAN_APPS_DIR}"
+    ## Windows apps
 
-cd poisson2D.app
+    cd "${WIN32_FORTRAN_APPS_DIR}"
 
-program_name="poisson2D"
-if [ ! -f "${BIN_DIR}/${program_name}.exe" ] ; then
-    echo -n "Building ${program_name^^} ... "
-    rm -rf {*.mod,*.res}
-    ${RC} ${program_name}.rc -O coff -o ${program_name}.res
-    ${FC} -std=f2018 -O3 -Wall -Wall \
-          -Wno-unused-dummy-argument -Wno-maybe-uninitialized \
-          -static -mwindows ${BMODS_DIR}/{kind,math}_consts.f90 \
-          ../{win32,{basic,about,x,xy,radio}_box_m,win32app}.f90 \
-          ${program_name}.f90 ${program_name}.res -o ${program_name}.exe
-    rm -rf {*.mod,*.res}
-    mv ${program_name}.exe "${BIN_DIR}"
-    echo "done."
+    cd poisson2D.app
+
+    program_name="poisson2D"
+    if [ ! -f "${BIN_DIR}/${program_name}.exe" ] ; then
+        echo -n "Building ${program_name^^} ... "
+        rm -rf {*.mod,*.res}
+        ${RC} ${program_name}.rc -O coff -o ${program_name}.res
+        ${FC} -std=f2018 -O3 -Wall -Wall \
+              -Wno-unused-dummy-argument -Wno-maybe-uninitialized \
+              -static -mwindows ${BMODS_DIR}/{kind,math}_consts.f90 \
+              ../{win32,{basic,about,x,xy,radio}_box_m,win32app}.f90 \
+              ${program_name}.f90 ${program_name}.res -o ${program_name}.exe
+        rm -rf {*.mod,*.res}
+        mv ${program_name}.exe "${BIN_DIR}"
+        echo "done."
+    fi
+
 fi
