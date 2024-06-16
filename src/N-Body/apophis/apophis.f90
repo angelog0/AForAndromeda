@@ -141,22 +141,6 @@
 !
 !   Maybe the same considerations hold for GNU/Linux and macOS.
 !
-!
-! LICENSE
-!
-!     Copyright (c) 2014-2023, ANGELO GRAZIOSI.  ALL RIGHTS RESERVED.
-!
-! ANGELO GRAZIOSI retains all intellectual property and proprietary rights
-! in and to this software, related documentation and any modifications
-! thereto.  Any use, reproduction, disclosure or distribution of this
-! software and related documentation without an express license agreement
-! from ANGELO GRAZIOSI is strictly prohibited.
-!
-!          THIS CODE AND INFORMATION ARE PROVIDED "AS IS" WITHOUT
-!   WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT
-!   NOT LIMITED TO THE IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR
-!   FITNESS FOR A PARTICULAR PURPOSE.
-!
 
 module apophis_lib
   use kind_consts, only: WP
