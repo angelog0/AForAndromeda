@@ -217,7 +217,7 @@ contains
     ! First the PARAMS ...
     call setup_params()
 
-    call init_graphics('Bouncing Balls...', &
+    call init_graphics('Plot Ellipse...', &
          WIDTH=screen_width,HEIGHT=screen_height, &
          X1=x_min,X2=x_max,Y1=y_min,Y2=y_max)
 
