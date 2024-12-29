@@ -2,7 +2,7 @@
 ! Author: Angelo Graziosi
 !
 !   created   : Sep 12, 2015
-!   last edit : Jul 24, 2023
+!   last edit : Dec 28, 2024
 !
 !   Complete Solution of a General Problem of Three Bodies
 !
@@ -44,88 +44,95 @@
 !
 !   2. A. Graziosi, Logbook di questioni digitali 02 (LQD02), p. 45
 !
-! HOW TO BUILD THE APP (MSYS2/MINGW64, GNU/Linux, macOS)
+! HOW TO BUILD THE APP (MSYS2, GNU/Linux, macOS)
 !
-!   cd N-Body
+!   cd programming
 !
 !   git clone https://github.com/interkosmos/fortran-sdl2.git
 !
-!   cd three_bodies
+!   cd fortran-sdl2
+!
+!   make FFLAGS='[-march=native] -Wall -std=f2018 -fmax-errors=1 $(SDL_CFLAGS) -O3' all examples
+!   mv libfortran-sdl2.a ../lib/
+!   mv c_util.mod glu.mod sdl2*.mod ../finclude/
+!   make clean
+!   cd ..
+!
+!   cd basic_mods
+!
+!   make FFLAGS='[-march=native] -Wall -std=f2018 -fmax-errors=1 -O3' all
+!   mv *.a ../lib/
+!   mv *.mod ../finclude/
+!   make clean
+!   cd ..
+!
+!   cd ode_mods
+!
+!   make FFLAGS='[-march=native] -Wall -std=f2018 -fmax-errors=1 -O3' all
+!   mv *.a ../lib/
+!   mv *.mod ../finclude/
+!   make clean
+!   cd ..
+!
+!   cd fortran-sdl2apps
+!
+!   make FFLAGS='[-march=native] -Wall -std=f2018 -fmax-errors=1 -O3' all
+!   mv *.a ../lib/
+!   mv *.mod ../finclude/
+!   make clean
+!   cd ..
+!
+!   cd three_body_problem
 !
 !   rm -rf *.mod; \
-!   gfortran[-mp-X] -std=f2008 -O3 [-march=native -funroll-loops] -Wall \
-!     -Wno-unused-dummy-argument [`sdl2-config --cflags`] \
-!     $B/basic-modules/{{kind,math}_consts,ft_timer_m,getdata,nicelabels,\
-!       camera_view_m}.f90 $B/ode-modules/{everhart,ode}_integrator.f90 \
-!     $SDL2F90 $B/sdl2-fortran.apps/SDL2_{app,shading}.f90 \
-!     three_bodies.f90 $LIBS -o three_bodies$EXE; \
-!   rm -rf {*.mod,../modules/*}
+!     gfortran[-mp-X] [-g3 -fbacktrace -fcheck=all] [-march=native] \
+!       -Wall -Wno-unused-dummy-argument -std=f2018 [-fmax-errors=1] -O3 \
+!       -I ../finclude [`sdl2-config --cflags`] \
+!       three_body_problem.f90 -o three_body_problem$EXE \
+!       -L ../lib -lbasic_mods -lode_mods -lfortran-sdl2apps -lfortran-sdl2 \
+!       $LIBS; \
+!   rm -rf *.mod
 !
-!   ./three_bodies$EXE
+!   ./three_body_problem$EXE
 !
 !   where, for the build on GNU/Linux [OSX+MacPorts X server], is:
 !
 !     EXE = .out
 !
-!   while for the build on MINGW{32,64} is:
+!   while for the build on MSYS2 is:
 !
 !     EXE = -$MSYSTEM (or EMPTY)
 !
-!   and (all platforms):
-!
-!     B = ../..
-!     S = ..
-!
-!     SDL2F90 = $S/fortran-sdl2/src/{c_util,sdl2/{sdl2_stdinc,sdl2_audio,\
-!       sdl2_blendmode,sdl2_cpuinfo,sdl2_gamecontroller,sdl2_error,\
-!       sdl2_events,sdl2_filesystem,sdl2_hints,sdl2_joystick,sdl2_keyboard,\
-!       sdl2_log,sdl2_messagebox,sdl2_rect,sdl2_pixels,sdl2_platform,\
-!       sdl2_scancode,sdl2_surface,sdl2_render,sdl2_keycode,sdl2_mouse,\
-!       sdl2_rwops,sdl2_thread,sdl2_timer,sdl2_version,sdl2_video,\
-!       sdl2_opengl},sdl2}.f90
-!
+!   and
 !
 !     LIBS = `sdl2-config --libs`
 !
 !   Notice that the above definition for LIBS produces a pure Windows
-!   app on MSYS2/MINGW64. This means that it will not show up a
-!   console/terminal for input data. On these systems, the LIBS
-!   definition should be:
+!   app. This means that will not show up a console/terminal to input
+!   data. On these systems, the LIBS definition should be:
 !
 !     LIBS = [-lSDL2main] -lSDL2 -lgdi32 -lcomdlg32 -luuid -loleaut32 -lole32
 !
 !   For a static build (run from Explorer), I have found usefull
 !
-!     LIBS = -static -lmingw32 -lSDL2main -lSDL2 -lws2_32 -ldinput8 \
+!     LIBS = -static -lmingw32 [-lSDL2main] -lSDL2 -lws2_32 -ldinput8 \
 !            -ldxguid -ldxerr8 -luser32 -lgdi32 -lwinmm -limm32 -lole32 \
 !            -loleaut32 -lshell32 -lversion -luuid -lcomdlg32 -lhid -lsetupapi
+!
+!   In this case one should avoid to use '-march=native' flag because
+!   it makes the binaries not portable: on another machine they crash
+!   (abort).
 !
 !   See as references:
 !
 !     1. https://stackoverflow.com/questions/53885736/issues-when-statically-compiling-sdl2-program
 !     2. https://groups.google.com/g/comp.lang.fortran/c/Usgys7Gww6o/m/CYEfzQfbhckJ
 !
-!
-! NOTE FOR WINDOWS
-!
-!   On Windows the application _hangs_ (NOT RESPONDING) when its
-!   window has focus (i.e. is selected) so the best way to launch it
-!   is from CMD or Explorer. From the MSYS2/MINGW64 shell one should
-!   use:
-!
-!     open PROGNAME
-!
-!   being:
-!
-!     alias open='start'
-!
-!   Maybe the same considerations hold for GNU/Linux and macOS.
-!
 
-module three_bodies_lib
-  use kind_consts, only: WP
-  use camera_view_m, only: camera_view_t
-  use SDL2_shading, only: color_rgb_t
+module three_body_problem_lib
+  use :: kind_consts, only: WP
+  use :: camera_view_m, only: camera_view_t
+  use :: shading_colors, only: color_rgb_t
 
   implicit none
   private
@@ -178,7 +185,6 @@ module three_bodies_lib
   integer :: id_method = 2, ll = 12
 
   integer :: screen_width = 900, screen_height = 900
-  logical :: axis_draw = .true.
 
   real(WP) :: k_view = 10, phi = 270, theta = 0, alpha = 45, &
        u_min = 0, u_max = 0, v_min = 0, v_max = 0, kq_clip = 10**2, &
@@ -190,10 +196,10 @@ module three_bodies_lib
 contains
 
   subroutine run()
-    use ft_timer_m, only: ft_timer_t
-    use ode_integrator, only: ode_on, ode_integrate, ode_off
-    use SDL2_app, only: close_graphics, init_graphics, &
-         clear_screen, draw_axis_x, draw_axis_y, draw_line, &
+    use :: ft_timer_m, only: ft_timer_t
+    use :: ode_integrator, only: ode_on, ode_integrate, ode_off
+    use :: sdl2app, only: close_graphics, init_graphics, &
+         clear_screen, draw_line, &
          set_rgba_color, quit
 
     real(WP) :: u0, v0, u, v
@@ -211,14 +217,6 @@ contains
          X1=u_min-u0,X2=u_max+u0,Y1=v_min-v0,Y2=v_max+v0)
 
     call clear_screen()
-
-    if (axis_draw) then
-       call set_rgba_color(255,255,255)  ! WHITE
-       call draw_axis_x(u_min,u_max,v_min)
-       call draw_axis_y(v_min,v_max,u_min)
-       call draw_axis_x(u_min,u_max,v_max)
-       call draw_axis_y(v_min,v_max,u_max)
-    end if
 
     ! Project the origin of reference system
     call my_view%do_projection([ 0.0_WP, 0.0_WP, 0.0_WP ],u0,v0)
@@ -351,7 +349,7 @@ contains
     end subroutine sub
 
     subroutine display_data(t,y)
-      use SDL2_app, only: draw_point, refresh
+      use :: sdl2app, only: draw_point, refresh
 
       real(WP), intent(in) :: t, y(:)
 
@@ -473,8 +471,6 @@ contains
     write(*,*) 'V_MIN = ', v_min
     write(*,*) 'V_MAX = ', v_max
     write(*,*)
-    write(*,*) 'Draw Axes = ', axis_draw
-    write(*,*)
   end subroutine show_params
 
   subroutine show_menu()
@@ -494,18 +490,12 @@ contains
     write(*,*) '  S : Screen Size'
     write(*,*) '  B : U-V Boundaries'
 
-    if (axis_draw) then
-       write(*,*) '  X : Hide Axes'
-    else
-       write(*,*) '  X : Draw Axes'
-    end if
-
     write(*,*) '  R : RUN'
     write(*,*) '  Q : QUIT'
   end subroutine show_menu
 
   subroutine process_menu(ikey)
-    use getdata, only: get
+    use :: getdata, only: get
 
     integer, intent(in) :: ikey
 
@@ -582,8 +572,6 @@ contains
        call get('U_MAX =',u_max)
        call get('V_MIN =',v_min)
        call get('V_MAX =',v_max)
-    case (ichar('X'))
-       axis_draw = .not. axis_draw
 
     case (ichar('R'))
        call run()
@@ -600,7 +588,7 @@ contains
   end subroutine process_menu
 
   subroutine app_menu()
-    use getdata, only: get
+    use :: getdata, only: get
 
     character :: key = 'R'
     integer :: ikey = ichar('R') ! Default
@@ -626,12 +614,12 @@ contains
     end do
     write(*,*) 'All done.'
   end subroutine app_menu
-end module three_bodies_lib
+end module three_body_problem_lib
 
-program three_bodies
-  use three_bodies_lib
+program three_body_problem
+  use :: three_body_problem_lib
 
   implicit none
 
   call app_menu()
-end program three_bodies
+end program three_body_problem

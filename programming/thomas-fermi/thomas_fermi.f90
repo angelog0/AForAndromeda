@@ -2,7 +2,7 @@
 ! Author: ANGELO GRAZIOSI
 !
 !   created   : May 02, 2015
-!   last edit : Aug 24, 2019
+!   last edit : Dec 29, 2024
 !
 !   Solving Thomas-Fermi Equation
 !
@@ -57,27 +57,60 @@
 !     http://arxiv.org/pdf/1205.1704v2.pdf (http://arxiv.org/abs/1205.1704)
 !
 !
-! HOW TO BUILD THE APP
+! HOW TO BUILD THE APP (MSYS2, GNU/Linux, macOS)
 !
-!   cd Thomas-Fermi
+!   cd programming
+!
+!   cd basic_mods
+!
+!   make FFLAGS='[-march=native] -Wall -std=f2018 -fmax-errors=1 -O3' all
+!   mv *.a ../lib/
+!   mv *.mod ../finclude/
+!   make clean
+!   cd ..
+!
+!   cd ode_mods
+!
+!   make FFLAGS='[-march=native] -Wall -std=f2018 -fmax-errors=1 -O3' all
+!   mv *.a ../lib/
+!   mv *.mod ../finclude/
+!   make clean
+!   cd ..
+!
+!   cd thomas-fermi
 !
 !   rm -rf *.mod; \
-!   gfortran[-mp-X] -std=f2008 -O3 [-march=native -funroll-loops] -Wall \
-!     -Wno-unused-dummy-argument \
-!     ../basic-modules/{{kind,math}_consts,ft_timer_m,getdata}.f90 \
-!     ../ode-modules/everhart_integrator.f90 \
-!     thomas_fermi-ra15.f90 -o thomas_fermi-ra15$EXE; \
+!     gfortran[-mp-X] [-g3 -fbacktrace -fcheck=all] [-march=native] \
+!       -Wall -std=f2018 [-fmax-errors=1] -O3 \
+!       -I ../finclude [`sdl2-config --cflags`] \
+!       thomas-fermi.f90 -o thomas-fermi$EXE \
+!       -L ../lib -lbasic_mods -lode_mods $LIBS; \
 !   rm -rf *.mod
 !
-!   thomas_fermi-ra15$EXE
+!   ./thomas-fermi$EXE
 !
 !   where, for the build on GNU/Linux [OSX+MacPorts X server], is:
 !
 !     EXE = .out
 !
-!   while for the build on MINGW{32,64} is:
+!   while for the build on MSYS2 is:
 !
 !     EXE = -$MSYSTEM (or EMPTY)
+!
+!   For a static build (run from Explorer), I have found usefull
+!
+!     LIBS = -static -lmingw32 -lws2_32 -ldinput8 \
+!            -ldxguid -ldxerr8 -luser32 -lgdi32 -lwinmm -limm32 -lole32 \
+!            -loleaut32 -lshell32 -lversion -luuid -lcomdlg32 -lhid -lsetupapi
+!
+!   In this case one should avoid to use '-march=native' flag because
+!   it makes the binaries not portable: on another machine they crash
+!   (abort).
+!
+!   See as references:
+!
+!     1. https://stackoverflow.com/questions/53885736/issues-when-statically-compiling-sdl2-program
+!     2. https://groups.google.com/g/comp.lang.fortran/c/Usgys7Gww6o/m/CYEfzQfbhckJ
 !
 
 module thomas_fermi_lib
