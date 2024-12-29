@@ -2,7 +2,7 @@
 ! Author: ANGELO GRAZIOSI
 !
 !   created   : Dec 21, 2022
-!   last edit : Jul 15, 2023
+!   last edit : Dec 28, 2024
 !
 !   Boundary Value Problem for Poisson Equation
 !
@@ -27,21 +27,44 @@
 !   Karlen D., Computational Physics, Carleton University
 !   Koonin S.E., Computational Physics, Addison-Wesley
 !
-! HOW TO BUILD THE APP
+! HOW TO BUILD THE APP (MSYS2, GNU/Linux, macOS)
 !
-!   cd sdl2-fortran.apps
+!   cd programming
 !
 !   git clone https://github.com/interkosmos/fortran-sdl2.git
+!
+!   cd fortran-sdl2
+!
+!   make FFLAGS='[-march=native] -Wall -std=f2018 -fmax-errors=1 $(SDL_CFLAGS) -O3' all examples
+!   mv libfortran-sdl2.a ../lib/
+!   mv c_util.mod glu.mod sdl2*.mod ../finclude/
+!   make clean
+!   cd ..
+!
+!   cd basic_mods
+!
+!   make FFLAGS='[-march=native] -Wall -std=f2018 -fmax-errors=1 -O3' all
+!   mv *.a ../lib/
+!   mv *.mod ../finclude/
+!   make clean
+!   cd ..
+!
+!   cd fortran-sdl2apps
+!
+!   make FFLAGS='[-march=native] -Wall -std=f2018 -fmax-errors=1 -O3' all
+!   mv *.a ../lib/
+!   mv *.mod ../finclude/
+!   make clean
+!   cd ..
 !
 !   cd poisson2D_solver
 !
 !   rm -rf *.mod; \
-!     gfortran[-mp-X] -std=f2018 -O3 -Wall \
-!       [`sdl2-config --cflags`] \
-!       ../../basic-modules/{{kind,math}_consts,getdata,nicelabels}.f90 \
-!       $SDL2F90 ../SDL2_{app,shading}.f90 \
-!       poisson2D_solver.f90 \
-!       $LIBS -o poisson2D_solver$EXE; \
+!     gfortran[-mp-X] [-g3 -fbacktrace -fcheck=all] [-march=native] \
+!       -Wall [-Wno-unused-dummy-argument] -std=f2018 [-fmax-errors=1] -O3 \
+!       -I ../finclude [`sdl2-config --cflags`] \
+!       poisson2D_solver.f90 -o poisson2D_solver$EXE \
+!       -L ../lib -lbasic_mods -lfortran-sdl2apps -lfortran-sdl2 $LIBS; \
 !   rm -rf *.mod
 !
 !   ./poisson2D_solver$EXE
@@ -50,61 +73,39 @@
 !
 !     EXE = .out
 !
-!   while for the build on MSYS2/MINGW64 is:
+!   while for the build on MSYS2 is:
 !
 !     EXE = -$MSYSTEM (or EMPTY)
 !
-!   and (all platform):
-!
-!     SDL2F90 = ../fortran-sdl2/src/{c_util,sdl2/{sdl2_stdinc,sdl2_audio,\
-!       sdl2_blendmode,sdl2_cpuinfo,sdl2_gamecontroller,sdl2_error,\
-!       sdl2_events,sdl2_filesystem,sdl2_hints,sdl2_joystick,sdl2_keyboard,\
-!       sdl2_log,sdl2_messagebox,sdl2_rect,sdl2_pixels,sdl2_platform,\
-!       sdl2_scancode,sdl2_surface,sdl2_render,sdl2_keycode,sdl2_mouse,\
-!       sdl2_rwops,sdl2_thread,sdl2_timer,sdl2_version,sdl2_video,\
-!       sdl2_opengl},sdl2}.f90
-!
+!   and
 !
 !     LIBS = `sdl2-config --libs`
 !
 !   Notice that the above definition for LIBS produces a pure Windows
-!   app on MSYS2/MINGW64. This means that it will not show up a
-!   console/terminal for input data. On these systems, the LIBS
-!   definition should be:
+!   app. This means that it will not show up a console/terminal for
+!   input data. On these systems, the LIBS definition should be:
 !
 !     LIBS = [-lSDL2main] -lSDL2 -lgdi32 -lcomdlg32 -luuid -loleaut32 -lole32
 !
 !   For a static build (run from Explorer), I have found usefull
 !
-!     LIBS = -static -lmingw32 -lSDL2main -lSDL2 -lws2_32 -ldinput8 \
+!     LIBS = -static -lmingw32 [-lSDL2main] -lSDL2 -lws2_32 -ldinput8 \
 !            -ldxguid -ldxerr8 -luser32 -lgdi32 -lwinmm -limm32 -lole32 \
 !            -loleaut32 -lshell32 -lversion -luuid -lcomdlg32 -lhid -lsetupapi
+!
+!   In this case one should avoid to use '-march=native' flag because
+!   it makes the binaries not portable: on another machine they crash
+!   (abort).
 !
 !   See as references:
 !
 !     1. https://stackoverflow.com/questions/53885736/issues-when-statically-compiling-sdl2-program
 !     2. https://groups.google.com/g/comp.lang.fortran/c/Usgys7Gww6o/m/CYEfzQfbhckJ
 !
-!
-! NOTE FOR WINDOWS
-!
-!   On Windows the application _hangs_ (NOT RESPONDING) when its
-!   window has focus (i.e. is selected) so the best way to launch it
-!   is from CMD or Explorer. From the MSYS2/MINGW64 shell one should
-!   use:
-!
-!     open poisson2D_solver$EXE
-!
-!   being:
-!
-!     alias open='start'
-!
-!   Maybe the same considerations hold for GNU/Linux and macOS.
-!
 
 module poisson2D_solver_lib
-  use kind_consts, only: WP
-  use math_consts, only: ZERO => Z0, ONE => Z1, TWO => Z2, PI, HF => Q1_2
+  use :: kind_consts, only: WP
+  use :: math_consts, only: ZERO => Z0, ONE => Z1, TWO => Z2, PI, HF => Q1_2
 
   implicit none
   private
@@ -285,7 +286,7 @@ contains
   end subroutine fcn_charged_line
 
   subroutine setup_aux_params
-    use SDL2_shading, only: MAX_COLOURS
+    use :: shading_colors, only: MAX_COLOURS
 
     ! Setup some aux. params
     h = ONE/ndiv
@@ -311,7 +312,7 @@ contains
   end subroutine setup_aux_params
 
   subroutine solve()
-    use SDL2_app, only: quit
+    use :: sdl2app, only: quit
 
     character(len=*), parameter :: FMT = '(*(g0,1x))'
 
@@ -461,8 +462,8 @@ contains
     end function get_grid_energy
 
     subroutine display_grid()
-      use SDL2_shading, only: MAX_COLOUR_INDEX, get_shading_color, color_rgb_t
-      use SDL2_app, only: set_rgba_color, draw_point, refresh
+      use :: shading_colors, only: MAX_COLOUR_INDEX, get_shading_color, color_rgb_t
+      use :: sdl2app, only: set_rgba_color, draw_point, refresh
 
       character(len=*), parameter :: FMT = '(a,i6,2(a,1pg14.7),a,i6,a,1pg14.7)'
       ! https://zmoon.github.io/FortranTipBrowser/tips/041.html
@@ -520,8 +521,8 @@ contains
   end subroutine solve
 
   subroutine run()
-    use SDL2_shading, only: shading_setup
-    use SDL2_app, only: init_graphics, close_graphics, clear_screen, &
+    use :: shading_colors, only: shading_setup
+    use :: sdl2app, only: init_graphics, close_graphics, clear_screen, &
          QUIT_EVENT, get_event
 
     integer :: ievent = -1000
@@ -599,7 +600,7 @@ contains
   end subroutine show_menu
 
   subroutine process_menu(ikey)
-    use getdata, only: get
+    use :: getdata, only: get
 
     integer, intent(in) :: ikey
 
@@ -724,7 +725,7 @@ contains
   end subroutine process_menu
 
   subroutine app_menu()
-    use getdata, only: get
+    use :: getdata, only: get
 
     character :: key = 'R'
     integer :: ikey = ichar('R') ! Default
@@ -751,7 +752,7 @@ contains
 end module poisson2D_solver_lib
 
 program poisson2D_solver
-  use poisson2D_solver_lib
+  use :: poisson2D_solver_lib
 
   call app_menu()
 end program poisson2D_solver
