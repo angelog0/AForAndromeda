@@ -2,7 +2,7 @@
 ! Author: ANGELO GRAZIOSI
 !
 !   created   : Aug 12, 2018
-!   last edit : Dec 13, 2022
+!   last edit : Dec 28, 2024
 !
 !   Zooming in the Mandelbrot Set
 !
@@ -38,20 +38,44 @@
 !   Heinz-Otto Peitgen, Hartmut Juergens, Dietmar Saupe, Chaos and
 !   Fractals - New Frontiers in Science, Springer, 1992
 !
-! HOW TO BUILD THE APP
+! HOW TO BUILD THE APP (MSYS2, GNU/Linux, macOS)
 !
-!   cd sdl2-fortran.apps
+!   cd programming
 !
 !   git clone https://github.com/interkosmos/fortran-sdl2.git
+!
+!   cd fortran-sdl2
+!
+!   make FFLAGS='[-march=native] -Wall -std=f2018 -fmax-errors=1 $(SDL_CFLAGS) -O3' all examples
+!   mv libfortran-sdl2.a ../lib/
+!   mv c_util.mod glu.mod sdl2*.mod ../finclude/
+!   make clean
+!   cd ..
+!
+!   cd basic_mods
+!
+!   make FFLAGS='[-march=native] -Wall -std=f2018 -fmax-errors=1 -O3' all
+!   mv *.a ../lib/
+!   mv *.mod ../finclude/
+!   make clean
+!   cd ..
+!
+!   cd fortran-sdl2apps
+!
+!   make FFLAGS='[-march=native] -Wall -std=f2018 -fmax-errors=1 -O3' all
+!   mv *.a ../lib/
+!   mv *.mod ../finclude/
+!   make clean
+!   cd ..
 !
 !   cd mandelzoom
 !
 !   rm -rf *.mod; \
-!     gfortran[-mp-X] -std=f2008 -O3 -Wall [`sdl2-config --cflags`] \
-!       ../../basic-modules/{{kind,math}_consts,ft_timer_m,\
-!         getdata,nicelabels}.f90 \
-!       $SDL2F90 ../SDL2_app.f90 mandelzoom.f90 \
-!       $LIBS -o mandelzoom$EXE; \
+!     gfortran[-mp-X] [-g3 -fbacktrace -fcheck=all] [-march=native] \
+!       -Wall [-Wno-unused-dummy-argument] -std=f2018 [-fmax-errors=1] -O3 \
+!       -I ../finclude [`sdl2-config --cflags`] \
+!       mandelzoom.f90 -o mandelzoom$EXE \
+!       -L ../lib -lbasic_mods -lfortran-sdl2apps -lfortran-sdl2 $LIBS; \
 !   rm -rf *.mod
 !
 !   ./mandelzoom$EXE
@@ -60,36 +84,29 @@
 !
 !     EXE = .out
 !
-!   while for the build on MINGW64 is:
+!   while for the build on MSYS2 is:
 !
 !     EXE = -$MSYSTEM (or EMPTY)
 !
-!   and (all platform):
-!
-!     SDL2F90 = ../fortran-sdl2/src/{c_util,sdl2/{sdl2_stdinc,sdl2_audio,\
-!       sdl2_blendmode,sdl2_cpuinfo,sdl2_gamecontroller,sdl2_error,\
-!       sdl2_events,sdl2_filesystem,sdl2_hints,sdl2_joystick,sdl2_keyboard,\
-!       sdl2_log,sdl2_messagebox,sdl2_rect,sdl2_pixels,sdl2_platform,\
-!       sdl2_scancode,sdl2_surface,sdl2_render,sdl2_keycode,sdl2_mouse,\
-!       sdl2_rwops,sdl2_thread,sdl2_timer,sdl2_version,sdl2_video,\
-!       sdl2_opengl},sdl2}.f90
-!
+!   and
 !
 !     LIBS = `sdl2-config --libs`
 !
 !   Notice that the above definition for LIBS produces a pure Windows
-!   app on MSYS2/MINGW64. This means that it will not show up a
-!   console/terminal for input data. On these systems, the LIBS
-!   definition should be:
+!   app. This means that it will not show up a console/terminal for
+!   input data. On these systems, the LIBS definition should be:
 !
 !     LIBS = [-lSDL2main] -lSDL2 -lgdi32 -lcomdlg32 -luuid -loleaut32 -lole32
 !
-!   For a static build on MSYS2/MINGW64 (run in Explorer), I have
-!   found usefull
+!   For a static build (run in Explorer), I have found usefull
 !
-!     LIBS = -static -lmingw32 -lSDL2main -lSDL2 -lws2_32 -ldinput8 \
+!     LIBS = -static -lmingw32 [-lSDL2main] -lSDL2 -lws2_32 -ldinput8 \
 !            -ldxguid -ldxerr8 -luser32 -lgdi32 -lwinmm -limm32 -lole32 \
 !            -loleaut32 -lshell32 -lversion -luuid -lcomdlg32 -lhid -lsetupapi
+!
+!   In this case one should avoid to use '-march=native' flag because
+!   it makes the binaries not portable: on another machine they crash
+!   (abort).
 !
 !   See as references:
 !
@@ -273,7 +290,7 @@ contains
 end module color_palette
 
 module mandelzoom_lib
-  use kind_consts, only: WP
+  use :: kind_consts, only: WP
 
   implicit none
   private
@@ -296,8 +313,8 @@ module mandelzoom_lib
 contains
 
   subroutine input_data()
-    use getdata, only: get
-    use color_palette, only: init_pal
+    use :: getdata, only: get
+    use :: color_palette, only: init_pal
 
     integer :: ierr
 
@@ -340,7 +357,7 @@ contains
   end subroutine input_data
 
   subroutine app_on()
-    use SDL2_app, only: init_graphics
+    use :: sdl2app, only: init_graphics
 
     !
     ! WE 'SWITCH ON' THINGS IN THIS ORDER: palette, G0, GRAPHICS
@@ -355,8 +372,8 @@ contains
   end subroutine app_on
 
   subroutine app_off()
-    use SDL2_app, only: close_graphics
-    use color_palette, only: delete_pal
+    use :: sdl2app, only: close_graphics
+    use :: color_palette, only: delete_pal
 
     integer :: ierr = 0 ! To silence the compiler ('may be used uninitialized')
 
@@ -376,8 +393,8 @@ contains
   end subroutine app_off
 
   subroutine app_run()
-    use sdl2, only: sdl_rect
-    use SDL2_app, only: QUIT_EVENT, &
+    use :: sdl2, only: sdl_rect
+    use :: sdl2app, only: QUIT_EVENT, &
          clear_screen, get_event, draw_rect, refresh, set_rgba_color, &
          set_viewport
 
@@ -454,7 +471,7 @@ contains
   contains
 
     subroutine calc_fractal()
-      use ft_timer_m, only: ft_timer_t
+      use :: ft_timer_m, only: ft_timer_t
 
       integer :: i, j, k
       real(WP) :: x, y, u, v, uq, vq
@@ -510,8 +527,8 @@ contains
     end subroutine calc_fractal
 
     subroutine display_fractal()
-      use SDL2_app, only: draw_point
-      use color_palette, only: color_rgb_t, get_color
+      use :: sdl2app, only: draw_point
+      use :: color_palette, only: color_rgb_t, get_color
 
       integer :: i, j
       type(color_rgb_t) :: c
@@ -530,7 +547,7 @@ contains
     end subroutine display_fractal
 
     subroutine save_fractal()
-      use color_palette, only: color_rgb_t, get_color
+      use :: color_palette, only: color_rgb_t, get_color
 
       character(len=*), parameter :: FNAME = 'mandelzoom.ppm'
 
@@ -583,7 +600,7 @@ contains
     end subroutine save_fractal
 
     subroutine draw_cross()
-      use SDL2_app, only: draw_line
+      use :: sdl2app, only: draw_line
 
       integer, parameter :: LENGTH = 14, HLENGTH = LENGTH/2
       integer :: x0, y0
@@ -604,16 +621,16 @@ contains
     end subroutine draw_cross
 
     subroutine process_event()
-      use sdl2, only: SDL_BUTTON_LEFT, SDL_BUTTON_MIDDLE, &
+      use :: sdl2, only: SDL_BUTTON_LEFT, SDL_BUTTON_MIDDLE, &
          SDL_BUTTON_RIGHT, &
          SDLK_1, SDLK_2, SDLK_3, &
          SDLK_d, SDLK_i, SDLK_s, &
          SDLK_LEFT, SDLK_RIGHT, &
          SDLK_UP, SDLK_DOWN, &
          SDLK_KP_PLUS, SDLK_KP_MINUS
-      use SDL2_app, only: WHEELUP_EVENT, WHEELDOWN_EVENT, &
+      use :: sdl2app, only: WHEELUP_EVENT, WHEELDOWN_EVENT, &
          get_mouse_x, get_mouse_y
-      use color_palette, only: reset_pal, set_pal
+      use :: color_palette, only: reset_pal, set_pal
 
       !
       ! NOTICE that 'get_mouse_x()' and 'get_mouse_y()' return the
@@ -713,7 +730,7 @@ contains
 end module mandelzoom_lib
 
 program mandelzoom
-  use mandelzoom_lib
+  use :: mandelzoom_lib
 
   call app_on()
   call app_run()

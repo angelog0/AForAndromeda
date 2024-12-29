@@ -2,7 +2,7 @@
 ! Author: ANGELO GRAZIOSI
 !
 !   created   : Sep 08, 2014
-!   last edit : Nov 13, 2022
+!   last edit : Dec 28, 2024
 !
 !   Process orbits (computed with calc_orbits.f90) and prints close encounters.
 !
@@ -44,31 +44,88 @@
 !   http://en.wikipedia.org/wiki/Numerical_model_of_the_Solar_System
 !
 !
-! HOW TO BUILD THE APP
+! HOW TO BUILD THE APP (MSYS2, GNU/Linux, macOS)
 !
-!   cd N-Body
+!   cd programming
 !
-!   rm -rf *.mod && \
-!   gfortran[-mp-X] -O3 [-march=native -funroll-loops] -Wall \
-!     [-Wno-unused-dummy-argument] $BLD_OPTS \
-!     ../basic-modules/{{kind,math}_consts,ft_timer_m,getdata,
-!       julian_dates}.f90 process_orbits.f90 \
-!     -o process_orbits$EXE && \
-!     rm -rf *.mod
+!   git clone https://github.com/interkosmos/fortran-sdl2.git
+!
+!   cd fortran-sdl2
+!
+!   make FFLAGS='[-march=native] -Wall -std=f2018 -fmax-errors=1 $(SDL_CFLAGS) -O3' all examples
+!   mv libfortran-sdl2.a ../lib/
+!   mv c_util.mod glu.mod sdl2*.mod ../finclude/
+!   make clean
+!   cd ..
+!
+!   cd basic_mods
+!
+!   make FFLAGS='[-march=native] -Wall -std=f2018 -fmax-errors=1 -O3' all
+!   mv *.a ../lib/
+!   mv *.mod ../finclude/
+!   make clean
+!   cd ..
+!
+!   cd ode_mods
+!
+!   make FFLAGS='[-march=native] -Wall -std=f2018 -fmax-errors=1 -O3' all
+!   mv *.a ../lib/
+!   mv *.mod ../finclude/
+!   make clean
+!   cd ..
+!
+!   cd fortran-sdl2apps
+!
+!   make FFLAGS='[-march=native] -Wall -std=f2018 -fmax-errors=1 -O3' all
+!   mv *.a ../lib/
+!   mv *.mod ../finclude/
+!   make clean
+!   cd ..
+!
+!   cd close_encounters
+!
+!   rm -rf *.mod; \
+!     gfortran[-mp-X] [-g3 -fbacktrace -fcheck=all] [-march=native] \
+!       [-funroll-loops] -Wall -std=f2018 \
+!       [-fmax-errors=1] -O3 -I ../finclude [`sdl2-config --cflags`] \
+!       process_orbits.f90 -o process_orbits$EXE \
+!       -L ../lib -lbasic_mods $LIBS; \
+!   rm -rf *.mod
 !
 !   ./process_orbits$EXE
 !
 !   where, for the build on GNU/Linux [OSX+MacPorts X server], is:
 !
-!     BLD_OPTS =
 !     EXE = .out
 !
-!   while for the build on MSYS2/MINGW{32,64} is:
+!   while for the build on MSYS2 is:
 !
-!     BLD_OPTS = [-static]
-!     EXE = -$PLATFORM
+!     EXE = -$MSYSTEM (or EMPTY)
 !
-!   (EXE could be EMPTY or .out for MSYS2).
+!   and
+!
+!     LIBS = `sdl2-config --libs`
+!
+!   Notice that the above definition for LIBS produces a pure Windows
+!   app. This means that will not show up a console/terminal to input
+!   data. On these systems, the LIBS definition should be:
+!
+!     LIBS = [-lSDL2main] -lSDL2 -lgdi32 -lcomdlg32 -luuid -loleaut32 -lole32
+!
+!   For a static build (run from Explorer), I have found usefull
+!
+!     LIBS = -static -lmingw32 [-lSDL2main] -lSDL2 -lws2_32 -ldinput8 \
+!            -ldxguid -ldxerr8 -luser32 -lgdi32 -lwinmm -limm32 -lole32 \
+!            -loleaut32 -lshell32 -lversion -luuid -lcomdlg32 -lhid -lsetupapi
+!
+!   In this case one should avoid to use '-march=native' flag because
+!   it makes the binaries not portable: on another machine they crash
+!   (abort).
+!
+!   See as references:
+!
+!     1. https://stackoverflow.com/questions/53885736/issues-when-statically-compiling-sdl2-program
+!     2. https://groups.google.com/g/comp.lang.fortran/c/Usgys7Gww6o/m/CYEfzQfbhckJ
 !
 
 module process_orbit_lib

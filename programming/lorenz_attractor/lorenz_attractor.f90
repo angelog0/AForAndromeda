@@ -2,7 +2,7 @@
 ! Author: ANGELO GRAZIOSI
 !
 !   created   : May 02, 2015
-!   last edit : Aug 24, 2023
+!   last edit : Dec 28, 2024
 !
 !   Lorenz Attractor
 !
@@ -13,21 +13,53 @@
 !   http://it.wikipedia.org/wiki/Effetto_farfalla and related links.
 !   http://ithaca.unisalento.it/nr-15_2020/articolo_IIp_12.pdf
 !
-! HOW TO BUILD THE APP (MSYS2/MINGW64, GNU/Linux, macOS)
+! HOW TO BUILD THE APP (MSYS2, GNU/Linux, macOS)
 !
-!   cd sdl2-fortran.apps
+!   cd programming
 !
 !   git clone https://github.com/interkosmos/fortran-sdl2.git
 !
-!   cd lorenz
+!   cd fortran-sdl2
 !
-!   rm -rf *.mod \
-!     gfortran[-mp-X] [-march=native] -Wall [-Wno-unused-dummy-argument] \
-!       -std=f2018 [-fmax-errors=1] [`sdl2-config --cflags`] -O3 \
-!       ../../basic-modules/{{kind,math}_consts,getdata,nicelabels}.f90 \
-!       ../../ode-modules/{everhart,ode}_integrator.f90  \
-!       $SDL2F90 ../SDL2_{app,shading}.f90 \
-!       lorenz_attractor.f90 -o lorenz_attractor$EXE $LIBS; \
+!   make FFLAGS='[-march=native] -Wall -std=f2018 -fmax-errors=1 $(SDL_CFLAGS) -O3' all examples
+!   mv libfortran-sdl2.a ../lib/
+!   mv c_util.mod glu.mod sdl2*.mod ../finclude/
+!   make clean
+!   cd ..
+!
+!   cd basic_mods
+!
+!   make FFLAGS='[-march=native] -Wall -std=f2018 -fmax-errors=1 -O3' all
+!   mv *.a ../lib/
+!   mv *.mod ../finclude/
+!   make clean
+!   cd ..
+!
+!   cd ode_mods
+!
+!   make FFLAGS='[-march=native] -Wall -std=f2018 -fmax-errors=1 -O3' all
+!   mv *.a ../lib/
+!   mv *.mod ../finclude/
+!   make clean
+!   cd ..
+!
+!   cd fortran-sdl2apps
+!
+!   make FFLAGS='[-march=native] -Wall -std=f2018 -fmax-errors=1 -O3' all
+!   mv *.a ../lib/
+!   mv *.mod ../finclude/
+!   make clean
+!   cd ..
+!
+!   cd lorenz_attractor
+!
+!   rm -rf *.mod; \
+!     gfortran[-mp-X] [-g3 -fbacktrace -fcheck=all] [-march=native] \
+!       -Wall [-Wno-unused-dummy-argument] -std=f2018 [-fmax-errors=1] -O3 \
+!       -I ../finclude [`sdl2-config --cflags`] \
+!       lorenz_attractor.f90 -o lorenz_attractor$EXE \
+!       -L ../lib -lbasic_mods -lode_mods -lfortran-sdl2apps -lfortran-sdl2 \
+!       $LIBS; \
 !   rm -rf *.mod
 !
 !   ./lorenz_attractor$EXE
@@ -36,27 +68,17 @@
 !
 !     EXE = .out
 !
-!   while for the build on MSYS2/MINGW64 is:
+!   while for the build on MSYS2 is:
 !
 !     EXE = -$MSYSTEM (or EMPTY)
 !
-!   and (all platform):
-!
-!     SDL2F90 = ../fortran-sdl2/src/{c_util,sdl2/{sdl2_stdinc,sdl2_audio,\
-!       sdl2_blendmode,sdl2_cpuinfo,sdl2_gamecontroller,sdl2_error,\
-!       sdl2_events,sdl2_filesystem,sdl2_hints,sdl2_joystick,sdl2_keyboard,\
-!       sdl2_log,sdl2_messagebox,sdl2_rect,sdl2_pixels,sdl2_platform,\
-!       sdl2_scancode,sdl2_surface,sdl2_render,sdl2_keycode,sdl2_mouse,\
-!       sdl2_rwops,sdl2_thread,sdl2_timer,sdl2_version,sdl2_video,\
-!       sdl2_opengl},sdl2}.f90
-!
+!   and
 !
 !     LIBS = `sdl2-config --libs`
 !
 !   Notice that the above definition for LIBS produces a pure Windows
-!   app on MSYS2/MINGW64. This means that will not show up a
-!   console/terminal to input data. On these systems, the LIBS
-!   definition should be:
+!   app. This means that will not show up a console/terminal to input
+!   data. On these systems, the LIBS definition should be:
 !
 !     LIBS = [-lSDL2main] -lSDL2 -lgdi32 -lcomdlg32 -luuid -loleaut32 -lole32
 !
@@ -66,26 +88,14 @@
 !            -ldxguid -ldxerr8 -luser32 -lgdi32 -lwinmm -limm32 -lole32 \
 !            -loleaut32 -lshell32 -lversion -luuid -lcomdlg32 -lhid -lsetupapi
 !
+!   In this case one should avoid to use '-march=native' flag because
+!   it makes the binaries not portable: on another machine they crash
+!   (abort).
+!
 !   See as references:
 !
 !     1. https://stackoverflow.com/questions/53885736/issues-when-statically-compiling-sdl2-program
 !     2. https://groups.google.com/g/comp.lang.fortran/c/Usgys7Gww6o/m/CYEfzQfbhckJ
-!
-!
-! NOTE FOR WINDOWS
-!
-!   On Windows the application _hangs_ (NOT RESPONDING) when its
-!   window has focus (i.e. is selected) so the best way to launch it
-!   is from CMD or Explorer. From the MSYS2/MINGW64 shell one should
-!   use:
-!
-!     open PROGNAME
-!
-!   being:
-!
-!     alias open='start'
-!
-!   Maybe the same considerations hold for GNU/Linux and macOS.
 !
 
 module lorenz_attractor_lib
@@ -93,11 +103,11 @@ module lorenz_attractor_lib
   use :: getdata, only: get
   use :: ode_integrator, only: ode_step => step, ode_on, ode_off
   use :: sdl2, only: sdl_rect
-  use :: SDL2_app, only: QUIT_EVENT, quit, get_event, &
+  use :: sdl2app, only: QUIT_EVENT, quit, get_event, &
        select_map, set_map_window, set_map_viewport, &
        init_graphics, close_graphics, clear_screen, &
        draw_point, draw_rect, set_color, refresh
-  use :: SDL2_shading, only: RED, GRAY, BROWN, LRED, LGRAY, LCYAN, YELLOW
+  use :: shading_colors, only: RED, GRAY, BROWN, LRED, LGRAY, LCYAN, YELLOW
 
   implicit none
   private
@@ -506,7 +516,7 @@ contains
 end module lorenz_attractor_lib
 
 program lorenz_attractor
-  use lorenz_attractor_lib
+  use :: lorenz_attractor_lib
 
   implicit none
 

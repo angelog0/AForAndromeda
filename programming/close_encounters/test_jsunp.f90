@@ -2,7 +2,7 @@
 ! Author: ANGELO GRAZIOSI
 !
 !   created   : Jun 20, 2015
-!   last edit : Sep 06, 2017
+!   last edit : Dec 28, 2024
 !
 !   Test for JSUNP (J-upiter, S-aturn, U-ranus, N-eptune, P-luto) problem
 !   with data found in the file JSUNP.JSU sent by A. JACKSON on Jul 01, 2016.
@@ -52,31 +52,61 @@
 !
 ! The position for JUPITER is exactly what reported in the file VALUE.SET.
 !
-! HOW TO BUILD THE APP
+! HOW TO BUILD THE APP (MSYS2, GNU/Linux, macOS)
 !
-!   cd N-Body
+!   cd programming
 !
-!   rm -rf *.mod && \
-!   gfortran[-mp-X] [-Warray-temporaries] -O3 -Wall \
-!     -Wno-unused-dummy-argument $BLD_OPTS \
-!     ../basic-modules/{kind,math}_consts.f90 \
-!     ../ode-modules/{everhart_integrator,\
-!       cernlib_integrators}.f90 test_jsunp.f90 -o test_jsunp$EXE && \
-!     rm -rf *.mod
+!   cd basic_mods
+!
+!   make FFLAGS='[-march=native] -Wall -std=f2018 -fmax-errors=1 -O3' all
+!   mv *.a ../lib/
+!   mv *.mod ../finclude/
+!   make clean
+!   cd ..
+!
+!   cd ode_mods
+!
+!   make FFLAGS='[-march=native] -Wall -std=f2018 -fmax-errors=1 -O3' all
+!   mv *.a ../lib/
+!   mv *.mod ../finclude/
+!   make clean
+!   cd ..
+!
+!   cd close_encounters
+!
+!   rm -rf *.mod; \
+!     gfortran[-mp-X] [-g3 -fbacktrace -fcheck=all] [-march=native] \
+!       -Wall -Wno-unused-dummy-argument -std=f2018 [-fmax-errors=1] -O3 \
+!       -I ../finclude \
+!       test_jsunp.f90 -o test_jsunp$EXE \
+!       -L ../lib -lbasic_mods -lode_mods $LIBS; \
+!   rm -rf *.mod
 !
 !   ./test_jsunp$EXE
 !
 !   where, for the build on GNU/Linux [OSX+MacPorts X server], is:
 !
-!     BLD_OPTS =
 !     EXE = .out
 !
-!   while for the build on MSYS2/MINGW{32,64} is:
+!   while for the build on MSYS2 is:
 !
-!     BLD_OPTS = [-static]
-!     EXE = -msys2/-mingw{32,64}
+!     EXE = -$MSYSTEM (or EMPTY)
 !
-!   (EXE could be EMPTY or .out for MSYS2).
+!   For a static build (run from Explorer), I have found usefull
+!
+!     LIBS = -static -lmingw32 [-lSDL2main] [-lSDL2] -lws2_32 -ldinput8 \
+!            -ldxguid -ldxerr8 -luser32 -lgdi32 -lwinmm -limm32 -lole32 \
+!            -loleaut32 -lshell32 -lversion -luuid -lcomdlg32 -lhid -lsetupapi
+!
+!   In this case one should avoid to use '-march=native' flag because
+!   it makes the binaries not portable: on another machine they crash
+!   (abort).
+!
+!   See as references:
+!
+!     1. https://stackoverflow.com/questions/53885736/issues-when-statically-compiling-sdl2-program
+!     2. https://groups.google.com/g/comp.lang.fortran/c/Usgys7Gww6o/m/CYEfzQfbhckJ
+!
 !
 
 program test_jsunp

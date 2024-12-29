@@ -2,7 +2,7 @@
 ! Author: ANGELO GRAZIOSI
 !
 !   created   : Sep 08, 2014
-!   last edit : Oct 02, 2017
+!   last edit : Dec 28, 2024
 !
 !   Computing orbits with the Everhart method
 !
@@ -44,33 +44,59 @@
 !   http://en.wikipedia.org/wiki/Numerical_model_of_the_Solar_System
 !
 !
-! HOW TO BUILD THE APP
+! HOW TO BUILD THE APP (MSYS2, GNU/Linux, macOS)
 !
-!   cd N-Body
+!   cd programming
 !
-!   rm -rf *.mod && \
-!   gfortran[-mp-X] -O3 [-march=native -funroll-loops] -Wall \
-!     -Wno-unused-dummy-argument $BLD_OPTS \
-!     ../basic-modules/{{kind,math}_consts,ft_timer_m,getdata}.f90 \
-!     ../ode-modules/everhart_integrator.f90 \
-!     calc_orbits.f90 -o calc_orbits$EXE && \
-!     rm -rf *.mod
+!   cd basic_mods
 !
-!   ./calc_orbits$EXE
+!   make FFLAGS='[-march=native] -Wall -std=f2018 -fmax-errors=1 -O3' all
+!   mv *.a ../lib/
+!   mv *.mod ../finclude/
+!   make clean
+!   cd ..
+!
+!   cd ode_mods
+!
+!   make FFLAGS='[-march=native] -Wall -std=f2018 -fmax-errors=1 -O3' all
+!   mv *.a ../lib/
+!   mv *.mod ../finclude/
+!   make clean
+!   cd ..
+!
+!   cd close_encounters
+!
+!   rm -rf *.mod; \
+!     gfortran[-mp-X] [-g3 -fbacktrace -fcheck=all] [-march=native] \
+!       [-funroll-loops] -Wall -Wno-unused-dummy-argument -std=f2018 [-fmax-errors=1] -O3 \
+!       -I ../finclude \
+!       calc_orbits.f90 -o calc_orbits$EXE \
+!       -L ../lib -lbasic_mods -lode_mods $LIBS; \
+!   rm -rf *.mod
 !
 !   where, for the build on GNU/Linux [OSX+MacPorts X server], is:
 !
-!     BLD_OPTS =
-!     PLATFORM =
 !     EXE = .out
 !
-!   while for the build on MSYS2/MINGW{32,64} is:
+!   while for the build on MSYS2 is:
 !
-!     BLD_OPTS = [-static]
-!     PLATFORM = MSYS/MINGW{32,64}
-!     EXE = -$PLATFORM
+!     EXE = -$MSYSTEM (or EMPTY)
 !
-!   (EXE could be EMPTY or .out for MSYS2).
+!   For a static build (run from Explorer), I have found usefull
+!
+!     LIBS = -static -lmingw32 [-lSDL2main] [-lSDL2] -lws2_32 -ldinput8 \
+!            -ldxguid -ldxerr8 -luser32 -lgdi32 -lwinmm -limm32 -lole32 \
+!            -loleaut32 -lshell32 -lversion -luuid -lcomdlg32 -lhid -lsetupapi
+!
+!   In this case one should avoid to use '-march=native' flag because
+!   it makes the binaries not portable: on another machine they crash
+!   (abort).
+!
+!   See as references:
+!
+!     1. https://stackoverflow.com/questions/53885736/issues-when-statically-compiling-sdl2-program
+!     2. https://groups.google.com/g/comp.lang.fortran/c/Usgys7Gww6o/m/CYEfzQfbhckJ
+!
 !
 
 module calc_orbits_lib
@@ -193,7 +219,7 @@ contains
 
     subroutine read_cards()
 
-      character(len=*), parameter :: CARDSFNAME = 'close_encounters.cards'
+      character(len=*), parameter :: CARDSFNAME = '../share/close_encounters.cards'
 
       integer :: i, ip1, ip2, cards_unit, io_status
       real(WP) :: mu = ZERO

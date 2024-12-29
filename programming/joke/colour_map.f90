@@ -2,28 +2,55 @@
 ! Author: ANGELO GRAZIOSI
 !
 !   created   : Dec 17, 2022
-!   last edit : Jul 04, 2023
+!   last edit : Dec 29, 2024
 !
 !   Colour Map.
 !
 ! DESCRIPTION
 !
 !   Displaying a colour map. Just a joke reimplementing the
-!   shade.kumac PAW macro in SDL2-Fortran!
+!   shade.kumac PAW macro in fortran-sdl2!
 !
 !
-! HOW TO BUILD THE APP
+! HOW TO BUILD THE APP (MSYS2, GNU/Linux, macOS)
 !
-!   cd sdl2-fortran.apps
+!   cd programming
 !
 !   git clone https://github.com/interkosmos/fortran-sdl2.git
 !
+!   cd fortran-sdl2
+!
+!   make FFLAGS='[-march=native] -Wall -std=f2018 -fmax-errors=1 $(SDL_CFLAGS) -O3' all examples
+!   mv libfortran-sdl2.a ../lib/
+!   mv c_util.mod glu.mod sdl2*.mod ../finclude/
+!   make clean
+!   cd ..
+!
+!   cd basic_mods
+!
+!   make FFLAGS='[-march=native] -Wall -std=f2018 -fmax-errors=1 -O3' all
+!   mv *.a ../lib/
+!   mv *.mod ../finclude/
+!   make clean
+!   cd ..
+!
+!   cd fortran-sdl2apps
+!
+!   make FFLAGS='[-march=native] -Wall -std=f2018 -fmax-errors=1 -O3' all
+!   mv *.a ../lib/
+!   mv *.mod ../finclude/
+!   make clean
+!   cd ..
+!
+!   cd joke
+!
 !   rm -rf *.mod; \
-!     gfortran[-mp-X] -std=f2018 -O3 -Wall [`sdl2-config --cflags`] \
-!       ../basic-modules/{{kind,math}_consts,nicelabels}.f90 \
-!       $SDL2F90 SDL2_{app,shading}.f90 \
-!       colour_map.f90 \
-!       $LIBS -o colour_map$EXE; \
+!     gfortran[-mp-X] [-g3 -fbacktrace -fcheck=all] [-march=native] \
+!       -Wall -std=f2018 [-fmax-errors=1] -O3 \
+!       -I ../finclude [`sdl2-config --cflags`] \
+!       colour_map.f90 -o colour_map$EXE \
+!       -L ../lib -lbasic_mods -lfortran-sdl2apps -lfortran-sdl2 \
+!       $LIBS; \
 !   rm -rf *.mod
 !
 !   ./colour_map$EXE
@@ -32,67 +59,42 @@
 !
 !     EXE = .out
 !
-!   while for the build on MSYS2/MINGW64 is:
+!   while for the build on MSYS2 is:
 !
 !     EXE = -$MSYSTEM (or EMPTY)
 !
-!   and (all platform):
-!
-!     B = ../..
-!     S = ..
-!
-!     SDL2F90 = fortran-sdl2/src/{c_util,sdl2/{sdl2_stdinc,sdl2_audio,\
-!       sdl2_blendmode,sdl2_cpuinfo,sdl2_gamecontroller,sdl2_error,\
-!       sdl2_events,sdl2_filesystem,sdl2_hints,sdl2_joystick,sdl2_keyboard,\
-!       sdl2_log,sdl2_messagebox,sdl2_rect,sdl2_pixels,sdl2_platform,\
-!       sdl2_scancode,sdl2_surface,sdl2_render,sdl2_keycode,sdl2_mouse,\
-!       sdl2_rwops,sdl2_thread,sdl2_timer,sdl2_version,sdl2_video,\
-!       sdl2_opengl},sdl2}.f90
-!
+!   and
 !
 !     LIBS = `sdl2-config --libs`
 !
 !   Notice that the above definition for LIBS produces a pure Windows
-!   app on MSYS2/MINGW64. This means that it will not show up a
-!   console/terminal for input data. On these systems, the LIBS
-!   definition should be:
+!   app. This means that will not show up a console/terminal to input
+!   data. On these systems, the LIBS definition should be:
 !
 !     LIBS = [-lSDL2main] -lSDL2 -lgdi32 -lcomdlg32 -luuid -loleaut32 -lole32
 !
 !   For a static build (run from Explorer), I have found usefull
 !
-!     LIBS = -static -lmingw32 -lSDL2main -lSDL2 -lws2_32 -ldinput8 \
+!     LIBS = -static -lmingw32 [-lSDL2main] -lSDL2 -lws2_32 -ldinput8 \
 !            -ldxguid -ldxerr8 -luser32 -lgdi32 -lwinmm -limm32 -lole32 \
 !            -loleaut32 -lshell32 -lversion -luuid -lcomdlg32 -lhid -lsetupapi
+!
+!   In this case one should avoid to use '-march=native' flag because
+!   it makes the binaries not portable: on another machine they crash
+!   (abort).
 !
 !   See as references:
 !
 !     1. https://stackoverflow.com/questions/53885736/issues-when-statically-compiling-sdl2-program
 !     2. https://groups.google.com/g/comp.lang.fortran/c/Usgys7Gww6o/m/CYEfzQfbhckJ
 !
-!
-! NOTE FOR WINDOWS
-!
-!   On Windows the application _hangs_ (NOT RESPONDING) when its
-!   window has focus (i.e. is selected) so the best way to launch it
-!   is from CMD or Explorer. From the MSYS2/MINGW64 shell one should
-!   use:
-!
-!     open colour_map$EXE
-!
-!   being:
-!
-!     alias open='start'
-!
-!   Maybe the same considerations hold for GNU/Linux and macOS.
-!
 
 program colour_map
-  use kind_consts, only: WP
-  use math_consts, only: ZERO => Z0, ONE => Z1, TWO_PI
-  use SDL2_shading, only: MAX_COLOUR_INDEX, MAX_COLOURS, shading_setup, &
+  use :: kind_consts, only: WP
+  use :: math_consts, only: ZERO => Z0, ONE => Z1, TWO_PI
+  use :: shading_colors, only: MAX_COLOUR_INDEX, MAX_COLOURS, shading_setup, &
        get_shading_color, color_rgb_t
-  use SDL2_app, only: init_graphics, close_graphics, set_rgba_color, &
+  use :: sdl2app, only: init_graphics, close_graphics, set_rgba_color, &
        draw_point, clear_screen, refresh, QUIT_EVENT, get_event, quit
 
   implicit none

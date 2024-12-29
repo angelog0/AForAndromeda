@@ -2,7 +2,7 @@
 ! Author: ANGELO GRAZIOSI
 !
 !   created   : Sep 08, 2014
-!   last edit : Jul 22, 2023
+!   last edit : Dec 28, 2024
 !
 !   Apophis
 !
@@ -63,21 +63,53 @@
 !   http://en.wikipedia.org/wiki/Numerical_model_of_the_Solar_System
 !
 !
-! HOW TO BUILD THE APP  (MSYS2/MINGW64, GNU/Linux, macOS)
+! HOW TO BUILD THE APP (MSYS2, GNU/Linux, macOS)
 !
-!   cd N-Body
+!   cd programming
 !
 !   git clone https://github.com/interkosmos/fortran-sdl2.git
+!
+!   cd fortran-sdl2
+!
+!   make FFLAGS='[-march=native] -Wall -std=f2018 -fmax-errors=1 $(SDL_CFLAGS) -O3' all examples
+!   mv libfortran-sdl2.a ../lib/
+!   mv c_util.mod glu.mod sdl2*.mod ../finclude/
+!   make clean
+!   cd ..
+!
+!   cd basic_mods
+!
+!   make FFLAGS='[-march=native] -Wall -std=f2018 -fmax-errors=1 -O3' all
+!   mv *.a ../lib/
+!   mv *.mod ../finclude/
+!   make clean
+!   cd ..
+!
+!   cd ode_mods
+!
+!   make FFLAGS='[-march=native] -Wall -std=f2018 -fmax-errors=1 -O3' all
+!   mv *.a ../lib/
+!   mv *.mod ../finclude/
+!   make clean
+!   cd ..
+!
+!   cd fortran-sdl2apps
+!
+!   make FFLAGS='[-march=native] -Wall -std=f2018 -fmax-errors=1 -O3' all
+!   mv *.a ../lib/
+!   mv *.mod ../finclude/
+!   make clean
+!   cd ..
 !
 !   cd apophis
 !
 !   rm -rf *.mod; \
-!   gfortran[-mp-X] -std=f2018 -O3 [-march=native -funroll-loops] -Wall \
-!     -Wno-unused-dummy-argument [`sdl2-config --cflags`] \
-!     $B/basic-modules/{{kind,math}_consts,getdata,julian_dates,\
-!       nicelabels,camera_view_m}.f90 $B/ode-modules/everhart_integrator.f90 \
-!     $SDL2F90 $C/SDL2_{app,shading}.f90 apophis.f90 $LIBS \
-!     -o apophis$EXE; \
+!     gfortran[-mp-X] [-g3 -fbacktrace -fcheck=all] [-march=native] \
+!       -Wall -Wno-unused-dummy-argument -std=f2018 [-fmax-errors=1] -O3 \
+!       -I ../finclude [`sdl2-config --cflags`] \
+!       apophis.f90 -o apophis$EXE \
+!       -L ../lib -lbasic_mods -lode_mods -lfortran-sdl2apps -lfortran-sdl2 \
+!       $LIBS; \
 !   rm -rf *.mod
 !
 !   ./apophis$EXE
@@ -86,66 +118,40 @@
 !
 !     EXE = .out
 !
-!   while for the build on MINGW{32,64} is:
+!   while for the build on MSYS2 is:
 !
 !     EXE = -$MSYSTEM (or EMPTY)
 !
-!   and (all platforms):
-!
-!     B = ../..
-!     C = $B/sdl2-fortran.apps
-!     S = ..
-!
-!     SDL2F90 = $S/fortran-sdl2/src/{c_util,sdl2/{sdl2_stdinc,sdl2_audio,\
-!       sdl2_blendmode,sdl2_cpuinfo,sdl2_gamecontroller,sdl2_error,\
-!       sdl2_events,sdl2_filesystem,sdl2_hints,sdl2_joystick,sdl2_keyboard,\
-!       sdl2_log,sdl2_messagebox,sdl2_rect,sdl2_pixels,sdl2_platform,\
-!       sdl2_scancode,sdl2_surface,sdl2_render,sdl2_keycode,sdl2_mouse,\
-!       sdl2_rwops,sdl2_thread,sdl2_timer,sdl2_version,sdl2_video,\
-!       sdl2_opengl},sdl2}.f90
-!
+!   and
 !
 !     LIBS = `sdl2-config --libs`
 !
 !   Notice that the above definition for LIBS produces a pure Windows
-!   app on MSYS2/MINGW64. This means that will not show up a
-!   console/terminal to input data. On these systems, the LIBS
-!   definition should be:
+!   app. This means that will not show up a console/terminal to input
+!   data. On these systems, the LIBS definition should be:
 !
 !     LIBS = [-lSDL2main] -lSDL2 -lgdi32 -lcomdlg32 -luuid -loleaut32 -lole32
 !
 !   For a static build (run from Explorer), I have found usefull
 !
-!     LIBS = -static -lmingw32 -lSDL2main -lSDL2 -lws2_32 -ldinput8 \
+!     LIBS = -static -lmingw32 [-lSDL2main] -lSDL2 -lws2_32 -ldinput8 \
 !            -ldxguid -ldxerr8 -luser32 -lgdi32 -lwinmm -limm32 -lole32 \
 !            -loleaut32 -lshell32 -lversion -luuid -lcomdlg32 -lhid -lsetupapi
+!
+!   In this case one should avoid to use '-march=native' flag because
+!   it makes the binaries not portable: on another machine they crash
+!   (abort).
 !
 !   See as references:
 !
 !     1. https://stackoverflow.com/questions/53885736/issues-when-statically-compiling-sdl2-program
 !     2. https://groups.google.com/g/comp.lang.fortran/c/Usgys7Gww6o/m/CYEfzQfbhckJ
 !
-!
-! NOTE FOR WINDOWS
-!
-!   On Windows the application _hangs_ (NOT RESPONDING) when its
-!   window has focus (i.e. is selected) so the best way to launch it
-!   is from CMD or Explorer. From the MSYS2/MINGW64 shell one should
-!   use:
-!
-!     open PROGNAME
-!
-!   being:
-!
-!     alias open='start'
-!
-!   Maybe the same considerations hold for GNU/Linux and macOS.
-!
 
 module apophis_lib
-  use kind_consts, only: WP
-  use camera_view_m, only: camera_view_t
-  use SDL2_shading, only: color_rgb_t
+  use :: kind_consts, only: WP
+  use :: camera_view_m, only: camera_view_t
+  use :: shading_colors, only: color_rgb_t
 
   implicit none
   private
@@ -219,7 +225,7 @@ contains
 
   subroutine read_cards()
 
-    character(len=*), parameter :: CARDSFNAME = 'close_encounters.cards'
+    character(len=*), parameter :: CARDSFNAME = '../share/close_encounters.cards'
 
     integer :: i, ip1, ip2, cards_unit, io_status
     real(WP) :: mu = 0
@@ -290,7 +296,7 @@ contains
   end subroutine read_cards
 
   subroutine calc_orbit()
-    use everhart_integrator, only: ra15_on, ra15_run, ra15_off
+    use :: everhart_integrator, only: ra15_on, ra15_run, ra15_off
 
     real(WP) :: x(MAX_NV) = 0, v(MAX_NV) = 0, h
 
@@ -368,8 +374,8 @@ contains
   end subroutine calc_orbit
 
   subroutine process_orbit
-    use, intrinsic :: iso_fortran_env, only: IOSTAT_END
-    use julian_dates, only: jd2cal
+    use , intrinsic :: iso_fortran_env, only: IOSTAT_END
+    use :: julian_dates, only: jd2cal
 
     real(WP), parameter :: DQ_THRESHOLD = (0.1_WP)**2
 
@@ -530,7 +536,7 @@ contains
   end subroutine setup_params
 
   subroutine setup_graphics()
-    use SDL2_app, only: init_graphics
+    use :: sdl2app, only: init_graphics
     real(WP) :: r
 
     call my_view%setup(k_view,phi,theta,alpha)
@@ -553,7 +559,7 @@ contains
 
   subroutine plot()
     use, intrinsic :: iso_fortran_env, only: IOSTAT_END
-    use SDL2_app, only: refresh, quit
+    use :: sdl2app, only: refresh, quit
 
     integer :: nv0, ll0, nclass0, ns, data_unit, io_status
     real(WP) :: h, t, t_old, x(MAX_NV) = 0, v(MAX_NV) = 0
@@ -629,7 +635,7 @@ contains
     end subroutine clip_in
 
     subroutine display_sun()
-      use SDL2_app, only: draw_line, draw_point, set_rgba_color
+      use :: sdl2app, only: draw_line, draw_point, set_rgba_color
 
       real(WP) :: u0, v0, u1, v1
 
@@ -670,7 +676,7 @@ contains
     end subroutine display_sun
 
     subroutine display_bodies()
-      use SDL2_app, only: draw_point, set_rgba_color
+      use :: sdl2app, only: draw_point, set_rgba_color
 
       integer  :: k, kp
       real(WP) :: dq, d(NDIM), u, v
@@ -701,7 +707,7 @@ contains
   end subroutine plot
 
   subroutine run()
-    use SDL2_app, only: clear_screen, close_graphics, QUIT_EVENT, get_event
+    use :: sdl2app, only: clear_screen, close_graphics, QUIT_EVENT, get_event
 
     integer :: ievent = -1000
 
@@ -770,7 +776,7 @@ contains
   end subroutine show_menu
 
   subroutine process_menu(ikey)
-    use getdata, only: get
+    use :: getdata, only: get
 
     integer, intent(in) :: ikey
 
@@ -808,7 +814,7 @@ contains
   end subroutine process_menu
 
   subroutine app_menu()
-    use getdata, only: get
+    use :: getdata, only: get
 
     character :: key = 'R'
     integer :: ikey = ichar('R') ! Default
@@ -835,7 +841,7 @@ contains
 end module apophis_lib
 
 program apophis
-  use apophis_lib
+  use :: apophis_lib
 
   call app_menu()
 end program apophis

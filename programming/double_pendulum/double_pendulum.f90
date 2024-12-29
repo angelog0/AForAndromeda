@@ -2,7 +2,7 @@
 ! Author: Angelo Graziosi
 !
 !   created   : Sep 12, 2015
-!   last edit : Jul 18, 2023
+!   last edit : Dec 28, 2024
 !
 !   Double Pendulum
 !
@@ -35,21 +35,54 @@
 ! H0 = 6.103515625E-5 = 1/2**14
 !
 !
-! HOW TO BUILD THE APP (MSYS2/MINGW64, GNU/Linux, macOS)
+! HOW TO BUILD THE APP (MSYS2, GNU/Linux, macOS)
 !
-!   cd sdl2-fortran.apps
+!   cd programming
 !
 !   git clone https://github.com/interkosmos/fortran-sdl2.git
 !
-!   cd pendulums
+!   cd fortran-sdl2
+!
+!   make FFLAGS='[-march=native] -Wall -std=f2018 -fmax-errors=1 $(SDL_CFLAGS) -O3' all examples
+!   mv libfortran-sdl2.a ../lib/
+!   mv c_util.mod glu.mod sdl2*.mod ../finclude/
+!   make clean
+!   cd ..
+!
+!   cd basic_mods
+!
+!   make FFLAGS='[-march=native] -Wall -std=f2018 -fmax-errors=1 -O3' all
+!   mv *.a ../lib/
+!   mv *.mod ../finclude/
+!   make clean
+!   cd ..
+!
+!   cd ode_mods
+!
+!   make FFLAGS='[-march=native] -Wall -std=f2018 -fmax-errors=1 -O3' all
+!   mv *.a ../lib/
+!   mv *.mod ../finclude/
+!   make clean
+!   cd ..
+!
+!   cd fortran-sdl2apps
+!
+!   make FFLAGS='[-march=native] -Wall -std=f2018 -fmax-errors=1 -O3' all
+!   mv *.a ../lib/
+!   mv *.mod ../finclude/
+!   make clean
+!   cd ..
+!
+!   cd double_pendulum
 !
 !   rm -rf *.mod; \
-!     gfortran[-mp-X] -std=f2018 -O3 -Wall [-Wno-unused-dummy-argument] \
-!       [`sdl2-config --cflags`] \
-!       $B/basic-modules/{{kind,math}_consts,getdata,nicelabels}.f90 \
-!       $B/ode-modules/{everhart,ode}_integrator.f90 $SDL2F90 $S/SDL2_app.f90 \
-!       double_pendulum.f90 $LIBS -o double_pendulum$EXE; \
-!   rm -rf {*.mod,$B/modules/*}
+!     gfortran[-mp-X] [-g3 -fbacktrace -fcheck=all] [-march=native] \
+!       -Wall [-Wno-unused-dummy-argument] -std=f2018 [-fmax-errors=1] -O3 \
+!       -I ../finclude [`sdl2-config --cflags`] \
+!       double_pendulum.f90 -o double_pendulum$EXE \
+!       -L ../lib -lbasic_mods -lode_mods -lfortran-sdl2apps -lfortran-sdl2 \
+!       $LIBS; \
+!   rm -rf *.mod
 !
 !   ./double_pendulum$EXE
 !
@@ -57,65 +90,40 @@
 !
 !     EXE = .out
 !
-!   while for the build on MSYS2/MINGW64 is:
+!   while for the build on MSYS2 is:
 !
 !     EXE = -$MSYSTEM (or EMPTY)
 !
-!   and (all platform):
-!
-!     B = ../..
-!     S = ..
-!
-!     SDL2F90 = $S/fortran-sdl2/src/{c_util,sdl2/{sdl2_stdinc,sdl2_audio,\
-!       sdl2_blendmode,sdl2_cpuinfo,sdl2_gamecontroller,sdl2_error,\
-!       sdl2_events,sdl2_filesystem,sdl2_hints,sdl2_joystick,sdl2_keyboard,\
-!       sdl2_log,sdl2_messagebox,sdl2_rect,sdl2_pixels,sdl2_platform,\
-!       sdl2_scancode,sdl2_surface,sdl2_render,sdl2_keycode,sdl2_mouse,\
-!       sdl2_rwops,sdl2_thread,sdl2_timer,sdl2_version,sdl2_video,\
-!       sdl2_opengl},sdl2}.f90
-!
+!   and
 !
 !     LIBS = `sdl2-config --libs`
 !
 !   Notice that the above definition for LIBS produces a pure Windows
-!   app on MSYS2/MINGW64. This means that will not show up a
-!   console/terminal to input data. On these systems, the LIBS
-!   definition should be:
+!   app. This means that will not show up a console/terminal to input
+!   data. On these systems, the LIBS definition should be:
 !
 !     LIBS = [-lSDL2main] -lSDL2 -lgdi32 -lcomdlg32 -luuid -loleaut32 -lole32
 !
 !   For a static build (run from Explorer), I have found usefull
 !
-!     LIBS = -static -lmingw32 -lSDL2main -lSDL2 -lws2_32 -ldinput8 \
+!     LIBS = -static -lmingw32 [-lSDL2main] -lSDL2 -lws2_32 -ldinput8 \
 !            -ldxguid -ldxerr8 -luser32 -lgdi32 -lwinmm -limm32 -lole32 \
 !            -loleaut32 -lshell32 -lversion -luuid -lcomdlg32 -lhid -lsetupapi
+!
+!   In this case one should avoid to use '-march=native' flag because
+!   it makes the binaries not portable: on another machine they crash
+!   (abort).
 !
 !   See as references:
 !
 !     1. https://stackoverflow.com/questions/53885736/issues-when-statically-compiling-sdl2-program
 !     2. https://groups.google.com/g/comp.lang.fortran/c/Usgys7Gww6o/m/CYEfzQfbhckJ
 !
-!
-! NOTE FOR WINDOWS
-!
-!   On Windows the application _hangs_ (NOT RESPONDING) when its
-!   window has focus (i.e. is selected) so the best way to launch it
-!   is from CMD or Explorer. From the MSYS2/MINGW64 shell one should
-!   use:
-!
-!     open PROGNAME
-!
-!   being:
-!
-!     alias open='start'
-!
-!   Maybe the same considerations hold for GNU/Linux and macOS.
-!
 
 module double_pendulum_lib
-  use kind_consts, only: WP
-  use math_consts, only: DEG2RAD, PI, Q1_3, Q4_3
-  use sdl2, only: sdl_rect
+  use :: kind_consts, only: WP
+  use :: math_consts, only: DEG2RAD, PI, Q1_3, Q4_3
+  use :: sdl2, only: sdl_rect
 
   implicit none
   private
@@ -171,7 +179,7 @@ module double_pendulum_lib
 contains
 
   subroutine setup_graphics()
-    use SDL2_app, only: select_map, set_map_window, set_map_viewport, &
+    use :: sdl2app, only: select_map, set_map_window, set_map_viewport, &
          init_graphics
 
     integer, parameter :: D1 = 20, D2 = 500, D3 = 500, &
@@ -316,7 +324,7 @@ contains
   end subroutine setup_params
 
   subroutine draw_pendulums(x1,y1,x2,y2)
-    use SDL2_app, only: draw_line, fill_circle, set_rgba_color
+    use :: sdl2app, only: draw_line, fill_circle, set_rgba_color
     real(WP), intent(in) :: x1, y1, x2, y2
 
     ! Draw arms positions
@@ -338,7 +346,7 @@ contains
   end subroutine draw_pendulums
 
   subroutine draw_position(x1,y1,x2,y2)
-    use SDL2_app, only: draw_point, set_rgba_color
+    use :: sdl2app, only: draw_point, set_rgba_color
     real(WP), intent(in) :: x1, y1, x2, y2
 
     ! Draw the position of first pendulum
@@ -351,7 +359,7 @@ contains
   end subroutine draw_position
 
   subroutine display_data(t,y)
-    use SDL2_app, only: select_map, clear_viewport, refresh
+    use :: sdl2app, only: select_map, clear_viewport, refresh
     real(WP), intent(in) :: t, y(:)
 
     real(WP), save :: x1, y1, x2, y2, v1q, v2q, e_tot
@@ -409,8 +417,8 @@ contains
   end subroutine display_data
 
   subroutine run()
-    use ode_integrator, only: ode_on, ode_integrate, ode_off
-    use SDL2_app, only: clear_screen, close_graphics, draw_rect, &
+    use :: ode_integrator, only: ode_on, ode_integrate, ode_off
+    use :: sdl2app, only: clear_screen, close_graphics, draw_rect, &
          set_rgba_color, QUIT_EVENT, get_event, quit, select_map
 
     integer :: ievent = -1000
@@ -518,7 +526,7 @@ contains
   end subroutine show_menu
 
   subroutine process_menu(ikey)
-    use getdata, only: get
+    use :: getdata, only: get
 
     integer, intent(in) :: ikey
 
@@ -573,7 +581,7 @@ contains
   end subroutine process_menu
 
   subroutine app_menu()
-    use getdata, only: get
+    use :: getdata, only: get
 
     character :: key = 'R'
     integer :: ikey = ichar('R') ! Default
@@ -600,7 +608,7 @@ contains
 end module double_pendulum_lib
 
 program double_pendulum
-  use double_pendulum_lib
+  use :: double_pendulum_lib
 
   implicit none
 

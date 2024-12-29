@@ -2,7 +2,7 @@
 ! Author: ANGELO GRAZIOSI
 !
 !   created   : Jul 26, 2018
-!   last edit : Jul 15, 2023
+!   last edit : Dec 27, 2024
 !
 !   Equipotentials and Streamlines Plots
 !
@@ -47,51 +47,57 @@
 !          tanh(z), z*sin(z), exp(z)*sin(z), 1/z, 1/bar(z), z*log(z),
 !          sin(z)/z, log(z*z-2), z^(1/3), z^(3/2)
 !
-! HOW TO BUILD THE APP (MSYS2/MINGW64, GNU/Linux, macOS)
+! HOW TO BUILD THE APP (MSYS2, GNU/Linux, macOS)
 !
-!   cd sdl2-fortran.apps
-!
-!   wget http://warp.povusers.org/FunctionParser/fparser4.5.2.zip
-!   aunpack fparser4.5.2.zip -X fparser-4.5.2/
-!   cd fparser-4.5.2
-!
-!   g++[-mp-X] -DFP_SUPPORT_FLOAT_TYPE [-DFP_USE_STRTOLD] \
-!     -DFP_SUPPORT_LONG_DOUBLE_TYPE \
-!     -DFP_SUPPORT_LONG_INT_TYPE -DFP_SUPPORT_COMPLEX_DOUBLE_TYPE \
-!     -DFP_SUPPORT_COMPLEX_FLOAT_TYPE -DFP_SUPPORT_COMPLEX_LONG_DOUBLE_TYPE \
-!     -DFP_USE_THREAD_SAFE_EVAL -DFP_USE_THREAD_SAFE_EVAL_WITH_ALLOCA \
-!     -c fparser.cc
-!
-!   g++[-mp-X] -DFP_SUPPORT_FLOAT_TYPE [-DFP_USE_STRTOLD] \
-!     -DFP_SUPPORT_LONG_DOUBLE_TYPE \
-!     -DFP_SUPPORT_LONG_INT_TYPE -DFP_SUPPORT_COMPLEX_DOUBLE_TYPE \
-!     -DFP_SUPPORT_COMPLEX_FLOAT_TYPE -DFP_SUPPORT_COMPLEX_LONG_DOUBLE_TYPE \
-!     -DFP_USE_THREAD_SAFE_EVAL -DFP_USE_THREAD_SAFE_EVAL_WITH_ALLOCA \
-!     -c fpoptimizer.cc
-!
-!   mv *.o ../../fparser-fortran/
-!
-!   cd ../../fparser-fortran
-!   g++[-mp-X] -I ../sdl2-fortran.apps/fparser-4.5.2 -c cwrapper_fparser.cc
-!   ar rcs libFParser.a fparser.o fpoptimizer.o cwrapper_fparser.o
-!
-!   rm -rf *.o *.mod
-!
-!   cd ../sdl2-fortran.apps
+!   cd programming
 !
 !   git clone https://github.com/interkosmos/fortran-sdl2.git
+!
+!   cd fortran-sdl2
+!
+!   make FFLAGS='[-march=native] -Wall -std=f2018 -fmax-errors=1 $(SDL_CFLAGS) -O3' all examples
+!   mv libfortran-sdl2.a ../lib/
+!   mv c_util.mod glu.mod sdl2*.mod ../finclude/
+!   make clean
+!   cd ..
+!
+!   cd basic_mods
+!
+!   make FFLAGS='[-march=native] -Wall -std=f2018 -fmax-errors=1 -O3' all
+!   mv *.a ../lib/
+!   mv *.mod ../finclude/
+!   make clean
+!   cd ..
+!
+!   cd fortran-sdl2apps
+!
+!   make FFLAGS='[-march=native] -Wall -std=f2018 -fmax-errors=1 -O3' all
+!   mv *.a ../lib/
+!   mv *.mod ../finclude/
+!   make clean
+!   cd ..
+!
+!   wget -q http://warp.povusers.org/FunctionParser/fparser4.5.2.zip
+!   aunpack -q fparser4.5.2.zip -X fparser-4.5.2/ > /dev/null
+!   rm -rf fparser4.5.2.zip
+!
+!   cd fortran-fparser
+!
+!   make FFLAGS='[-march=native] -Wall -std=f2018 -fmax-errors=1 -O3' all
+!   mv *.a ../lib/
+!   mv *.mod ../finclude/
+!   make clean
+!   cd ..
 !
 !   cd complex-dynamics
 !
 !   rm -rf *.mod; \
-!     gfortran[-mp-X] --std=f2018 -O3 -Wall [-Wno-surprising] \
-!       [-fmax-stack-var-size=20971520] [`sdl2-config --cflags`] \
-!       $B/basic-modules/{{kind,math}_consts,additional_functions,\
-!         ft_timer_m,utilities,getdata,nicelabels,contour_plots}.f90 \
-!       $B/fparser-fortran/fparser_cd.f90 \
-!       $SDL2F90 $S/SDL2_app.f90 \
-!       flux_stream.f90 $LIBS -L $B/fparser-fortran -lFParser -lstdc++ \
-!       -o flux_stream$EXE; \
+!     gfortran[-mp-X] [-g3 -fbacktrace -fcheck=all] [-march=native] \
+!       -Wall [-Wno-unused-dummy-argument] -std=f2018 [-fmax-errors=1] -O3 \
+!       -I ../finclude [`sdl2-config --cflags`] \
+!       flux_stream.f90 -o flux_stream$EXE \
+!       -L ../lib -lfortran-fparser -lbasic_mods -lfortran-sdl2apps -lfortran-sdl2 \
+!       -lfpc++ -lstdc++ $LIBS; \
 !   rm -rf *.mod
 !
 !   ./flux_stream$EXE
@@ -100,72 +106,47 @@
 !
 !     EXE = .out
 !
-!   while for the build on MSYS2/MINGW64 is:
+!   while for the build on MSYS2 is:
 !
 !     EXE = -$MSYSTEM (or EMPTY)
 !
-!   and (all platform):
-!
-!     B = ../..
-!     S = ..
-!
-!     SDL2F90 = $B/sdl2-fortran/src/{c_util,sdl2/{sdl2_stdinc,sdl2_audio,\
-!       sdl2_blendmode,sdl2_cpuinfo,sdl2_gamecontroller,sdl2_error,\
-!       sdl2_events,sdl2_filesystem,sdl2_hints,sdl2_joystick,sdl2_keyboard,\
-!       sdl2_log,sdl2_messagebox,sdl2_rect,sdl2_pixels,sdl2_platform,\
-!       sdl2_scancode,sdl2_surface,sdl2_render,sdl2_keycode,sdl2_mouse,\
-!       sdl2_rwops,sdl2_thread,sdl2_timer,sdl2_version,sdl2_video,\
-!       sdl2_opengl},sdl2}.f90
-!
+!   and
 !
 !     LIBS = `sdl2-config --libs`
 !
 !   Notice that the above definition for LIBS produces a pure Windows
-!   app on MSYS2/MINGW64. This means that will not show up a
-!   console/terminal to input data. On these systems, the LIBS
-!   definition should be:
+!   app. This means that will not show up a console/terminal to input
+!   data. On these systems, the LIBS definition should be:
 !
-!     LIBS = -lSDL2main -lSDL2 -lgdi32 -lcomdlg32 -luuid -loleaut32 -lole32
+!     LIBS = [-lSDL2main] -lSDL2 -lgdi32 -lcomdlg32 -luuid -loleaut32 -lole32
 !
 !   For a static build (run from Explorer), I have found usefull
 !
-!     LIBS = -static -lmingw32 -lSDL2main -lSDL2 -lws2_32 -ldinput8 \
+!     LIBS = -static -lmingw32 [-lSDL2main] -lSDL2 -lws2_32 -ldinput8 \
 !            -ldxguid -ldxerr8 -luser32 -lgdi32 -lwinmm -limm32 -lole32 \
 !            -loleaut32 -lshell32 -lversion -luuid -lcomdlg32 -lhid -lsetupapi
+!
+!   In this case one should avoid to use '-march=native' flag because
+!   it makes the binaries not portable: on another machine they crash
+!   (abort).
 !
 !   See as references:
 !
 !     1. https://stackoverflow.com/questions/53885736/issues-when-statically-compiling-sdl2-program
 !     2. https://groups.google.com/g/comp.lang.fortran/c/Usgys7Gww6o/m/CYEfzQfbhckJ
 !
-!
-! NOTE FOR WINDOWS
-!
-!   On Windows the application _hangs_ (NOT RESPONDING) when its
-!   window has focus (i.e. is selected) so the best way to launch it
-!   is from CMD or Explorer. From the MSYS2/MINGW64 shell one should
-!   use:
-!
-!     open PROGNAME
-!
-!   being:
-!
-!     alias open='start'
-!
-!   Maybe the same considerations hold for GNU/Linux and macOS.
-!
 
 module flux_stream_lib
-  use kind_consts, only: WP
-  use math_consts, only: ZERO => Z0, PI, JJ
-  use additional_functions, only: sqr => sqr_z, bar => conjg_z
-  use fparser_cd, only: function_parser_cd_t => FunctionParser_cd_type, &
+  use :: kind_consts, only: WP
+  use :: math_consts, only: ZERO => Z0, PI, JJ
+  use :: additional_functions, only: sqr => sqr_z, bar => conjg_z
+  use :: fparser_cd, only: function_parser_cd_t => FunctionParser_cd_type, &
        new_parser => NewParser, parse_function => Parse, &
        error_msg => ErrorMsg, get_parse_error_type => GetParseErrorType, &
        delete_parser => DeleteParser, eval_function => Eval, &
        add_constant => AddConstant, add_function => AddFunction, &
        optimize_parser => Optimize
-  use sdl2, only: sdl_rect
+  use :: sdl2, only: sdl_rect
 
   implicit none
   private
@@ -185,7 +166,7 @@ module flux_stream_lib
   ! Number of lines in the drawing
   integer :: nlines = 20
 
-  logical :: phi_plot = .false., psi_plot = .false., axis_plot = .false.
+  logical :: phi_plot = .false., psi_plot = .false.
 
   ! W = PHI + i*PSI = F(Z) and Z = X + i*Y regions
   real(WP) :: phi_min = -5, phi_max = 5, psi_min = -5, psi_max = 5, &
@@ -201,7 +182,7 @@ module flux_stream_lib
 contains
 
   subroutine input_data()
-    use getdata, only: get
+    use :: getdata, only: get
 
     ! Number of points in the drawing
     integer :: npoints = 500
@@ -339,23 +320,6 @@ contains
        psi_plot = .true.
     end select
 
-    id_plot = 0 ! Default
-    write(*,*) 'Choose WHAT to plot:'
-    write(*,*) '  0 : NO Axis'
-    write(*,*) '  1 : BOTH Axes'
-    call get('ID_PLOT =',id_plot)
-    write(*,*)
-
-    ! For the sake of completeness...
-    axis_plot = .false.
-
-    select case(id_plot)
-    case (1)
-       axis_plot = .true.
-    case default
-       axis_plot = .false.
-    end select
-
   contains
 
     function phi_fcn(x,y) result(r)
@@ -385,7 +349,7 @@ contains
   end subroutine input_data
 
   subroutine app_on()
-    use SDL2_app, only: set_map_window, set_map_viewport, init_graphics
+    use :: sdl2app, only: set_map_window, set_map_viewport, init_graphics
 
     real(WP) :: dx, dy, dphi, dpsi, u(2), v(2)
 
@@ -430,7 +394,7 @@ contains
   end subroutine app_on
 
   subroutine app_off()
-    use SDL2_app, only: close_graphics
+    use :: sdl2app, only: close_graphics
 
     integer :: ierr = 0
 
@@ -465,11 +429,11 @@ contains
   end subroutine app_off
 
   subroutine app_run()
-    use ft_timer_m, only: ft_timer_t
-    use SDL2_app, only: select_map, &
+    use :: ft_timer_m, only: ft_timer_t
+    use :: sdl2app, only: select_map, &
          QUIT_EVENT, clear_screen, draw_line, draw_rect, get_event, &
-         refresh, set_rgba_color, draw_axis_x, draw_axis_y
-    use contour_plots, only: conrec
+         refresh, set_rgba_color
+    use :: contour_plots, only: conrec
 
     integer :: ievent = -1000
     integer :: i
@@ -542,18 +506,6 @@ contains
           call conrec(g,x,y,psi,conrec_line)
        end if
 
-       if (axis_plot) then
-          call set_rgba_color(255,255,255)  ! WHITE
-
-          call select_map(W_MAP)
-          call draw_axis_x(phi_min,phi_max,psi_min)
-          call draw_axis_y(psi_min,psi_max,phi_min)
-
-          call select_map(Z_MAP)
-          call draw_axis_x(x_min,x_max,y_min)
-          call draw_axis_y(y_min,y_max,x_min)
-       end if
-
        ! Stop 'run_app()'...
 
        call run_timer%stop()
@@ -584,7 +536,7 @@ contains
 end module flux_stream_lib
 
 program flux_stream
-  use flux_stream_lib
+  use :: flux_stream_lib
 
   call app_on()
   call app_run()

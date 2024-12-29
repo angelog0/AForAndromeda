@@ -4,9 +4,15 @@
 ! The figure can be displayed with DISPLAY_BRKMTLSK
 !
 !
-! gfortran -std=f2018 -O2 -Wall brkmtlsk_calc.f90 -o brkmtlsk_calc.out
+!   rm -rf *.mod; \
+!     gfortran[-mp-X] [-g3 -fbacktrace -fcheck=all] [-march=native] \
+!       -Wall -std=f2018 [-fmax-errors=1] -O3 \
+!       -I ../finclude \
+!       brkmtlsk_calc.f90 -o brkmtlsk_calc$EXE \
+!       -L ../lib -lbasic_mods $LIBS; \
+!   rm -rf *.mod
 !
-! ./brkmtlsk_calc.out 200 -0.75 0.0 2.5
+! ./brkmtlsk_calc 200 -0.75 0.0 2.5
 !
 !
 ! The input parameters are:
@@ -16,6 +22,30 @@
 !   - SIZE   : The size of the region in complex plane (a square)
 !
 ! See: https://fortran-lang.discourse.group/t/first-mandelbrot-set/2198
+!
+! For the build on GNU/Linux [OSX+MacPorts X server], is:
+!
+!   EXE = .out
+!
+! while for the build on MSYS2 is:
+!
+!   EXE = -$MSYSTEM (or EMPTY)
+!
+! For a static build (run from Explorer), I have found usefull
+!
+!     LIBS = -static -lmingw32 -lws2_32 -ldinput8 \
+!            -ldxguid -ldxerr8 -luser32 -lgdi32 -lwinmm -limm32 -lole32 \
+!            -loleaut32 -lshell32 -lversion -luuid -lcomdlg32 -lhid -lsetupapi
+!
+!   In this case one should avoid to use '-march=native' flag because
+!   it makes the binaries not portable: on another machine they crash
+!   (abort).
+!
+!   See as references:
+!
+!     1. https://stackoverflow.com/questions/53885736/issues-when-statically-compiling-sdl2-program
+!     2. https://groups.google.com/g/comp.lang.fortran/c/Usgys7Gww6o/m/CYEfzQfbhckJ
+!
 !
 
 program brkmtlsk_calc

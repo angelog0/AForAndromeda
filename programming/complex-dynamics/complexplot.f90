@@ -2,7 +2,7 @@
 ! Author: ANGELO GRAZIOSI
 !
 !   created   : Jul 08, 2018
-!   last edit : Jul 15, 2023
+!   last edit : Dec 28, 2024
 !
 !   Domain coloring for complex functions (Conformal Map coloring)
 !
@@ -21,50 +21,57 @@
 !
 !   The core algorithm is adapted from the original (Ref. [4]).
 !
-! HOW TO BUILD THE APP (MSYS2/MINGW64, GNU/Linux, macOS)
+! HOW TO BUILD THE APP (MSYS2, GNU/Linux, macOS)
 !
-!   cd sdl2-fortran.apps
-!
-!   wget http://warp.povusers.org/FunctionParser/fparser4.5.2.zip
-!   aunpack fparser4.5.2.zip -X fparser-4.5.2/
-!   cd fparser-4.5.2
-!
-!   g++[-mp-X] -DFP_SUPPORT_FLOAT_TYPE [-DFP_USE_STRTOLD] \
-!     -DFP_SUPPORT_LONG_DOUBLE_TYPE \
-!     -DFP_SUPPORT_LONG_INT_TYPE -DFP_SUPPORT_COMPLEX_DOUBLE_TYPE \
-!     -DFP_SUPPORT_COMPLEX_FLOAT_TYPE -DFP_SUPPORT_COMPLEX_LONG_DOUBLE_TYPE \
-!     -DFP_USE_THREAD_SAFE_EVAL -DFP_USE_THREAD_SAFE_EVAL_WITH_ALLOCA \
-!     -c fparser.cc
-!
-!   g++[-mp-X] -DFP_SUPPORT_FLOAT_TYPE [-DFP_USE_STRTOLD] \
-!     -DFP_SUPPORT_LONG_DOUBLE_TYPE \
-!     -DFP_SUPPORT_LONG_INT_TYPE -DFP_SUPPORT_COMPLEX_DOUBLE_TYPE \
-!     -DFP_SUPPORT_COMPLEX_FLOAT_TYPE -DFP_SUPPORT_COMPLEX_LONG_DOUBLE_TYPE \
-!     -DFP_USE_THREAD_SAFE_EVAL -DFP_USE_THREAD_SAFE_EVAL_WITH_ALLOCA \
-!     -c fpoptimizer.cc
-!
-!   mv *.o ../../fparser-fortran/
-!
-!   cd ../../fparser-fortran
-!   g++[-mp-X] -I ../sdl2-fortran.apps/fparser-4.5.2 -c cwrapper_fparser.cc
-!   ar rcs libFParser.a fparser.o fpoptimizer.o cwrapper_fparser.o
-!
-!   rm -rf *.o *.mod
-!
-!   cd ../sdl2-fortran.apps
+!   cd programming
 !
 !   git clone https://github.com/interkosmos/fortran-sdl2.git
+!
+!   cd fortran-sdl2
+!
+!   make FFLAGS='[-march=native] -Wall -std=f2018 -fmax-errors=1 $(SDL_CFLAGS) -O3' all examples
+!   mv libfortran-sdl2.a ../lib/
+!   mv c_util.mod glu.mod sdl2*.mod ../finclude/
+!   make clean
+!   cd ..
+!
+!   cd basic_mods
+!
+!   make FFLAGS='[-march=native] -Wall -std=f2018 -fmax-errors=1 -O3' all
+!   mv *.a ../lib/
+!   mv *.mod ../finclude/
+!   make clean
+!   cd ..
+!
+!   cd fortran-sdl2apps
+!
+!   make FFLAGS='[-march=native] -Wall -std=f2018 -fmax-errors=1 -O3' all
+!   mv *.a ../lib/
+!   mv *.mod ../finclude/
+!   make clean
+!   cd ..
+!
+!   wget -q http://warp.povusers.org/FunctionParser/fparser4.5.2.zip
+!   aunpack -q fparser4.5.2.zip -X fparser-4.5.2/ > /dev/null
+!   rm -rf fparser4.5.2.zip
+!
+!   cd fortran-fparser
+!
+!   make FFLAGS='[-march=native] -Wall -std=f2018 -fmax-errors=1 -O3' all
+!   mv *.a ../lib/
+!   mv *.mod ../finclude/
+!   make clean
+!   cd ..
 !
 !   cd complex-dynamics
 !
 !   rm -rf *.mod; \
-!     gfortran[-mp-X] --std=f2018 -O3 -Wall [`sdl2-config --cflags`] \
-!       $B/basic-modules/{{kind,math}_consts,additional_functions,\
-!         ft_timer_m,utilities,getdata,nicelabels}.f90 \
-!       $B/fparser-fortran/fparser_cd.f90 \
-!       $SDL2F90 $S/SDL2_app.f90 complexplot.f90 \
-!       $LIBS -L $B/fparser-fortran -lFParser -lstdc++ \
-!       -o complexplot$EXE; \
+!     gfortran[-mp-X] [-g3 -fbacktrace -fcheck=all] [-march=native] \
+!       -Wall [-Wno-unused-dummy-argument] -std=f2018 [-fmax-errors=1] -O3 \
+!       -I ../finclude [`sdl2-config --cflags`] \
+!       complexplot.f90 -o complexplot$EXE \
+!       -L ../lib -lfortran-fparser -lbasic_mods -lfortran-sdl2apps -lfortran-sdl2 \
+!       -lfpc++ -lstdc++ $LIBS; \
 !   rm -rf *.mod
 !
 !   ./complexplot$EXE
@@ -73,67 +80,42 @@
 !
 !     EXE = .out
 !
-!   while for the build on MINGW{32,64} is:
+!   while for the build on MSYS2 is:
 !
 !     EXE = -$MSYSTEM (or EMPTY)
 !
-!   and (all platform):
-!
-!     B = ../..
-!     S = ..
-!
-!     SDL2F90 = $B/fortran-sdl2/src/{c_util,sdl2/{sdl2_stdinc,sdl2_audio,\
-!       sdl2_blendmode,sdl2_cpuinfo,sdl2_gamecontroller,sdl2_error,\
-!       sdl2_events,sdl2_filesystem,sdl2_hints,sdl2_joystick,sdl2_keyboard,\
-!       sdl2_log,sdl2_messagebox,sdl2_rect,sdl2_pixels,sdl2_platform,\
-!       sdl2_scancode,sdl2_surface,sdl2_render,sdl2_keycode,sdl2_mouse,\
-!       sdl2_rwops,sdl2_thread,sdl2_timer,sdl2_version,sdl2_video,\
-!       sdl2_opengl},sdl2}.f90
-!
+!   and
 !
 !     LIBS = `sdl2-config --libs`
 !
 !   Notice that the above definition for LIBS produces a pure Windows
-!   app on MSYS2/MINGW64. This means that will not show up a
-!   console/terminal to input data. On these systems, the LIBS
-!   definition should be:
+!   app. This means that will not show up a console/terminal to input
+!   data. On these systems, the LIBS definition should be:
 !
-!     LIBS = -lSDL2main -lSDL2 -lgdi32 -lcomdlg32 -luuid -loleaut32 -lole32
+!     LIBS = [-lSDL2main] -lSDL2 -lgdi32 -lcomdlg32 -luuid -loleaut32 -lole32
 !
 !   For a static build (run from Explorer), I have found usefull
 !
-!     LIBS = -static -lmingw32 -lSDL2main -lSDL2 -lws2_32 -ldinput8 \
+!     LIBS = -static -lmingw32 [-lSDL2main] -lSDL2 -lws2_32 -ldinput8 \
 !            -ldxguid -ldxerr8 -luser32 -lgdi32 -lwinmm -limm32 -lole32 \
 !            -loleaut32 -lshell32 -lversion -luuid -lcomdlg32 -lhid -lsetupapi
+!
+!   In this case one should avoid to use '-march=native' flag because
+!   it makes the binaries not portable: on another machine they crash
+!   (abort).
 !
 !   See as references:
 !
 !     1. https://stackoverflow.com/questions/53885736/issues-when-statically-compiling-sdl2-program
 !     2. https://groups.google.com/g/comp.lang.fortran/c/Usgys7Gww6o/m/CYEfzQfbhckJ
 !
-!
-! NOTE FOR WINDOWS
-!
-!   On Windows the application _hangs_ (NOT RESPONDING) when its
-!   window has focus (i.e. is selected) so the best way to launch it
-!   is from CMD or Explorer. From the MSYS2/MINGW64 shell one should
-!   use:
-!
-!     open PROGNAME
-!
-!   being:
-!
-!     alias open='start'
-!
-!   Maybe the same considerations hold for GNU/Linux and macOS.
-!
 
 module complexplot_lib
-  use kind_consts, only: WP
-  use math_consts, only: ZERO => Z0, ONE => Z1, TWO => Z2, SIX => Z6, &
+  use :: kind_consts, only: WP
+  use :: math_consts, only: ZERO => Z0, ONE => Z1, TWO => Z2, SIX => Z6, &
        PI, TWO_PI, E_NEPER, JJ
-  use additional_functions, only: sqr => sqr_z, bar => conjg_z
-  use fparser_cd, only: FunctionParser_cd_type, NewParser, Parse, &
+  use :: additional_functions, only: sqr => sqr_z, bar => conjg_z
+  use :: fparser_cd, only: FunctionParser_cd_type, NewParser, Parse, &
        ErrorMsg, GetParseErrorType, DeleteParser, Eval, AddConstant, &
        AddFunction
 
@@ -152,7 +134,7 @@ module complexplot_lib
 contains
 
   subroutine input_data()
-    use getdata, only: get, MAXLEN
+    use :: getdata, only: get, MAXLEN
 
     character(len=MAXLEN) :: fz_buffer = '((z*z-1)*sqr(z-2-i))/(z*z+2+2*i)'
     integer :: ierr
@@ -220,7 +202,7 @@ contains
   end subroutine input_data
 
   subroutine app_on()
-    use SDL2_app, only: init_graphics
+    use :: sdl2app, only: init_graphics
 
     call input_data()
     call init_graphics('Color Complex Plot', &
@@ -228,7 +210,7 @@ contains
   end subroutine app_on
 
   subroutine app_off()
-    use SDL2_app, only: close_graphics
+    use :: sdl2app, only: close_graphics
 
     call close_graphics()
     call DeleteParser(fp)
@@ -385,8 +367,8 @@ contains
   end subroutine get_RGB_color
 
   subroutine app_run()
-    use sdl2, only: sdl_rect
-    use SDL2_app, only: QUIT_EVENT, clear_screen, draw_rect, get_event, &
+    use :: sdl2, only: sdl_rect
+    use :: sdl2app, only: QUIT_EVENT, clear_screen, draw_rect, get_event, &
          refresh, set_rgba_color, set_viewport
 
     ! The bounding rectangle and viewport
@@ -426,8 +408,8 @@ contains
   contains
 
     subroutine display_fun()
-      use ft_timer_m, only: ft_timer_t
-      use SDL2_app, only: draw_point, set_rgba_color
+      use :: ft_timer_m, only: ft_timer_t
+      use :: sdl2app, only: draw_point, set_rgba_color
 
       integer :: i, j, color(3), data_unit
       real(WP) :: x, y
@@ -507,7 +489,7 @@ contains
 end module complexplot_lib
 
 program complexplot
-  use complexplot_lib
+  use :: complexplot_lib
 
   call app_on()
   call app_run()

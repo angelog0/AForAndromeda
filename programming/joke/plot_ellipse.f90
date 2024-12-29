@@ -2,45 +2,10 @@
 ! Author: Angelo Graziosi
 !
 !   created   : Aug 08, 2023
-!   last edit : Aug 13, 2023
+!   last edit : Dec 29, 2024
 !
 ! Just a joke. It plots an ellipse for wich F0, F1 and F2 are ALWAYS
 ! the center and two vector in the directions of coniugate diameters.
-!
-! Building on MSYS2/MINGW64:
-!
-! rm -rf {*.mod,../../modules/*}; \
-!   gfortran -march=native -Wall -std=f2018 -fmax-errors=1 -O3 \
-!   -J ../../modules \
-!   ../../basic-modules/{{kind,math}_consts,getdata,nicelabels}.f90 \
-!   ../../sdl2-fortran/src/{c_util,sdl2/{sdl2_stdinc,sdl2_audio,\
-!     sdl2_blendmode,sdl2_cpuinfo,sdl2_gamecontroller,sdl2_error,\
-!     sdl2_events,sdl2_filesystem,sdl2_hints,sdl2_joystick,sdl2_keyboard,\
-!     sdl2_log,sdl2_messagebox,sdl2_rect,sdl2_pixels,sdl2_platform,\
-!     sdl2_scancode,sdl2_surface,sdl2_render,sdl2_keycode,sdl2_mouse,\
-!     sdl2_rwops,sdl2_thread,sdl2_timer,sdl2_version,sdl2_video,\
-!     sdl2_opengl},sdl2}.f90 ../SDL2_app.f90 \
-!   plot_ellipse.f90 -o plot_ellipse-static.out -static \
-!   -lmingw32 -lSDL2main -lSDL2 -lws2_32 -ldinput8 -ldxguid -ldxerr8 \
-!   -luser32 -lgdi32 -lwinmm -limm32 -lole32 -loleaut32 -lshell32 \
-!   -lversion -luuid -lcomdlg32 -lhid -lsetupapi;  \
-! rm -rf {*.mod,../modules/*}
-!
-! Building on WSL:
-!
-! rm -rf {*.mod,../../modules/*}; \
-!   gfortran -march=native -Wall -std=f2018 -fmax-errors=1 -O3 \
-!   -J ../../modules \
-!   ../../basic-modules/{{kind,math}_consts,getdata,nicelabels}.f90 \
-!   ../../sdl2-fortran/src/{c_util,sdl2/{sdl2_stdinc,sdl2_audio,\
-!     sdl2_blendmode,sdl2_cpuinfo,sdl2_gamecontroller,sdl2_error,\
-!     sdl2_events,sdl2_filesystem,sdl2_hints,sdl2_joystick,sdl2_keyboard,\
-!     sdl2_log,sdl2_messagebox,sdl2_rect,sdl2_pixels,sdl2_platform,\
-!     sdl2_scancode,sdl2_surface,sdl2_render,sdl2_keycode,sdl2_mouse,\
-!     sdl2_rwops,sdl2_thread,sdl2_timer,sdl2_version,sdl2_video,\
-!     sdl2_opengl},sdl2}.f90 ../SDL2_app.f90 \
-!   plot_ellipse.f90 -o plot_ellipse-wsl.out -lSDL2; \
-! rm -rf {*.mod,../modules/*}
 !
 ! Try as independent vectors: A(1,3), B(-1,1) and so on ...
 !
@@ -53,6 +18,83 @@
 !   3. https://math.stackexchange.com/questions/3994666/parametric-equation-of-an-ellipse-in-the-3d-space
 !
 !   4. https://math.stackexchange.com/questions/339126/how-to-draw-an-ellipse-if-a-center-and-3-arbitrary-points-on-it-are-given
+!
+!
+! HOW TO BUILD THE APP (MSYS2, GNU/Linux, macOS)
+!
+!   cd programming
+!
+!   git clone https://github.com/interkosmos/fortran-sdl2.git
+!
+!   cd fortran-sdl2
+!
+!   make FFLAGS='[-march=native] -Wall -std=f2018 -fmax-errors=1 $(SDL_CFLAGS) -O3' all examples
+!   mv libfortran-sdl2.a ../lib/
+!   mv c_util.mod glu.mod sdl2*.mod ../finclude/
+!   make clean
+!   cd ..
+!
+!   cd basic_mods
+!
+!   make FFLAGS='[-march=native] -Wall -std=f2018 -fmax-errors=1 -O3' all
+!   mv *.a ../lib/
+!   mv *.mod ../finclude/
+!   make clean
+!   cd ..
+!
+!   cd fortran-sdl2apps
+!
+!   make FFLAGS='[-march=native] -Wall -std=f2018 -fmax-errors=1 -O3' all
+!   mv *.a ../lib/
+!   mv *.mod ../finclude/
+!   make clean
+!   cd ..
+!
+!   cd joke
+!
+!   rm -rf *.mod; \
+!     gfortran[-mp-X] [-g3 -fbacktrace -fcheck=all] [-march=native] \
+!       -Wall -std=f2018 [-fmax-errors=1] -O3 \
+!       -I ../finclude [`sdl2-config --cflags`] \
+!       plot_ellipse.f90 -o plot_ellipse$EXE \
+!       -L ../lib -lbasic_mods -lfortran-sdl2apps -lfortran-sdl2 \
+!       $LIBS; \
+!   rm -rf *.mod
+!
+!   ./plot_ellipse$EXE NITER
+!
+!   where, for the build on GNU/Linux [OSX+MacPorts X server], is:
+!
+!     EXE = .out
+!
+!   while for the build on MSYS2 is:
+!
+!     EXE = -$MSYSTEM (or EMPTY)
+!
+!   and
+!
+!     LIBS = `sdl2-config --libs`
+!
+!   Notice that the above definition for LIBS produces a pure Windows
+!   app. This means that will not show up a console/terminal to input
+!   data. On these systems, the LIBS definition should be:
+!
+!     LIBS = [-lSDL2main] -lSDL2 -lgdi32 -lcomdlg32 -luuid -loleaut32 -lole32
+!
+!   For a static build (run from Explorer), I have found usefull
+!
+!     LIBS = -static -lmingw32 [-lSDL2main] -lSDL2 -lws2_32 -ldinput8 \
+!            -ldxguid -ldxerr8 -luser32 -lgdi32 -lwinmm -limm32 -lole32 \
+!            -loleaut32 -lshell32 -lversion -luuid -lcomdlg32 -lhid -lsetupapi
+!
+!   In this case one should avoid to use '-march=native' flag because
+!   it makes the binaries not portable: on another machine they crash
+!   (abort).
+!
+!   See as references:
+!
+!     1. https://stackoverflow.com/questions/53885736/issues-when-statically-compiling-sdl2-program
+!     2. https://groups.google.com/g/comp.lang.fortran/c/Usgys7Gww6o/m/CYEfzQfbhckJ
 !
 
 module app_lib
@@ -132,7 +174,7 @@ contains
        func => faxes
        write(*,*) 'Ellipse contains the points:'
        write(*,*) 'A = ', f0+f1
-       write(*,*) 'B = ', f0+f1
+       write(*,*) 'B = ', f0+f2
     else
        func => fpoints
        write(*,*) 'Independent vectors generating the ellipse:'
@@ -197,7 +239,7 @@ contains
   end subroutine set_func
 
   subroutine run()
-    use SDL2_app, only: init_graphics, close_graphics, QUIT_EVENT, &
+    use :: sdl2app, only: init_graphics, close_graphics, QUIT_EVENT, &
          get_event, set_rgba_color, draw_point, draw_circle, draw_ellipse, &
          quit, refresh, clear_screen, fill_circle
 

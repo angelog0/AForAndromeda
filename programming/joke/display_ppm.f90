@@ -2,63 +2,77 @@
 ! Author: ANGELO GRAZIOSI
 !
 !   created   : Dec 12, 2022
-!   last edit : Dec 13, 2022
+!   last edit : Dec 29, 2024
 !
 !   Displaying PPM files
 !
 ! DESCRIPTION
 !
-!   Displaying a PPM file using SDL2-FORTRAN.
+!   Displaying a PPM file using fortran-sdl2.
 !
 !
-! HOW TO BUILD THE APP
+! HOW TO BUILD THE APP (MSYS2, GNU/Linux, macOS)
 !
-!   cd sdl2-fortran.apps
+!   cd programming
 !
 !   git clone https://github.com/interkosmos/fortran-sdl2.git
 !
-!   rm -rf *.mod \
-!     gfortran[-mp-X] -std=f2008 -O3 -Wall [`sdl2-config --cflags`] \
-!       ../basic-modules/{{kind,math}_consts,nicelabels}.f90 \
-!       $SDL2F90 SDL2_app.f90 display_ppm.f90 \
-!       $LIBS -o display_ppm$EXE; \
+!   cd fortran-sdl2
+!
+!   make FFLAGS='[-march=native] -Wall -std=f2018 -fmax-errors=1 $(SDL_CFLAGS) -O3' all examples
+!   mv libfortran-sdl2.a ../lib/
+!   mv c_util.mod glu.mod sdl2*.mod ../finclude/
+!   make clean
+!   cd ..
+!
+!   cd fortran-sdl2apps
+!
+!   make FFLAGS='[-march=native] -Wall -std=f2018 -fmax-errors=1 -O3' all
+!   mv *.a ../lib/
+!   mv *.mod ../finclude/
+!   make clean
+!   cd ..
+!
+!   cd joke
+!
+!   rm -rf *.mod; \
+!     gfortran[-mp-X] [-g3 -fbacktrace -fcheck=all] [-march=native] \
+!       -Wall -std=f2018 [-fmax-errors=1] -O3 \
+!       -I ../finclude [`sdl2-config --cflags`] \
+!       display_ppm.f90 -o display_ppm$EXE \
+!       -L ../lib -lfortran-sdl2apps -lfortran-sdl2 \
+!       $LIBS; \
 !   rm -rf *.mod
 !
-!   [./]display_ppm$EXE PPM_NAME
+!   ./display_ppm$EXE SDL2_mandelzoom.ppm
 !
 !   where, for the build on GNU/Linux [OSX+MacPorts X server], is:
 !
 !     EXE = .out
 !
-!   while for the build on MINGW64 is:
+!   while for the build on MSYS2 is:
 !
 !     EXE = -$MSYSTEM (or EMPTY)
 !
-!   and (all platform):
-!
-!     SDL2F90 = fortran-sdl2/src/{c_util,sdl2/{sdl2_stdinc,sdl2_audio,\
-!       sdl2_blendmode,sdl2_cpuinfo,sdl2_gamecontroller,sdl2_error,\
-!       sdl2_events,sdl2_filesystem,sdl2_hints,sdl2_joystick,sdl2_keyboard,\
-!       sdl2_log,sdl2_messagebox,sdl2_rect,sdl2_pixels,sdl2_platform,\
-!       sdl2_scancode,sdl2_surface,sdl2_render,sdl2_keycode,sdl2_mouse,\
-!       sdl2_rwops,sdl2_thread,sdl2_timer,sdl2_version,sdl2_video,\
-!       sdl2_opengl},sdl2}.f90
-!
+!   and
 !
 !     LIBS = `sdl2-config --libs`
 !
 !   Notice that the above definition for LIBS produces a pure Windows
-!   app on MINGW64. This means that it will not show up a
-!   console/terminal for input data. On these systems, the LIBS
-!   definition should be:
+!   app. This means that will not show up a console/terminal to input
+!   data. On these systems, the LIBS definition should be:
 !
 !     LIBS = [-lSDL2main] -lSDL2 -lgdi32 -lcomdlg32 -luuid -loleaut32 -lole32
 !
 !   For a static build (run from Explorer), I have found usefull
 !
-!     LIBS = -static -lmingw32 -lSDL2main -lSDL2 -lws2_32 -ldinput8 \
+!     LIBS = -static -lmingw32 [-lSDL2main] -lSDL2 -lws2_32 -ldinput8 \
 !            -ldxguid -ldxerr8 -luser32 -lgdi32 -lwinmm -limm32 -lole32 \
 !            -loleaut32 -lshell32 -lversion -luuid -lcomdlg32 -lhid -lsetupapi
+!
+!   In this case one should avoid to use '-march=native' flag because
+!   it makes the binaries not portable: on another machine they crash
+!   (abort).
 !
 !   See as references:
 !
@@ -95,12 +109,12 @@ contains
     !
     ! In this command line,
     !
-    !   ./display_ppm.out SDL2_mandelzoom.ppm
+    !   ./display_ppm SDL2_mandelzoom.ppm
     !
     ! we have 2 arguments: the program name and the file name
     ! 'SDL2_mandelzoom.ppm'
     !
-    if (i /= 2) stop ': USAGE: ./display_ppm.out PPM_NAME'
+    if (i /= 2) stop ': USAGE: ./display_ppm PPM_NAME'
   end subroutine get_commandline
 
   subroutine get_screen()
@@ -128,7 +142,7 @@ contains
   end subroutine get_screen
 
   subroutine app_on()
-    use SDL2_app, only: init_graphics
+    use :: sdl2app, only: init_graphics
 
     call get_commandline()
     call get_screen()
@@ -138,14 +152,14 @@ contains
   end subroutine app_on
 
   subroutine app_off()
-    use SDL2_app, only: close_graphics
+    use :: sdl2app, only: close_graphics
 
     ! GRAPHICS
     call close_graphics()
   end subroutine app_off
 
   subroutine app_run()
-    use SDL2_app, only: QUIT_EVENT, &
+    use :: sdl2app, only: QUIT_EVENT, &
          clear_screen, get_event, refresh, set_viewport
 
     integer :: ievent = -1000
@@ -165,8 +179,8 @@ contains
 
   contains
     subroutine display()
-      !use kind_consts, only: WP
-      use SDL2_app, only: set_rgba_color, draw_point
+      !use :: kind_consts, only: WP
+      use :: sdl2app, only: set_rgba_color, draw_point
 
       ! 1 byte
       integer(1) :: r, g, b
@@ -213,7 +227,7 @@ contains
 end module display_ppm_lib
 
 program display_ppm
-  use display_ppm_lib
+  use :: display_ppm_lib
 
   call app_on()
   call app_run()
