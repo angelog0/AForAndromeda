@@ -2,7 +2,7 @@
 ! Author: Angelo Graziosi
 !
 !   created   : Mar 10, 2006
-!   last edit : Jun 10, 2022
+!   last edit : Jan 24, 2024
 !
 !   Useful mathematical constants module
 !
@@ -33,6 +33,8 @@ module math_consts
   real(WP), parameter, public :: Q1_2 = Z1/2
   real(WP), parameter, public :: Q1_3 = Z1/3
   real(WP), parameter, public :: Q1_4 = Z1/4
+  real(WP), parameter, public :: Q1_6 = Z1/6
+  real(WP), parameter, public :: Q1_8 = Z1/8
   real(WP), parameter, public :: Q3_2 = Z3/2
   real(WP), parameter, public :: Q4_3 = Z4/3
   real(WP), parameter, public :: Q3_16 = Z3/16

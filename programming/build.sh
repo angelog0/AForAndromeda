@@ -4,11 +4,11 @@
 ##
 ##   From AForAndromeda directory:
 ##
-##     ./build-all.sh
+##     ./build.sh
 ##
 ##   or (on macOS, for example after installing the right bash > 4.0)
 ##
-##     FC=gfortran-mp-12 CXX=g++-mp-12 bash ./build-all.sh
+##     FC=gfortran-mp-12 bash ./build-all.sh
 ##
 ##   We have removed the '-march=native' flag because it makes
 ##   binaries NOT PORTABLE across the same OS with different
@@ -16,38 +16,60 @@
 ##
 ##     FC='gfortran -march=native' ./build-all.sh
 ##
+##   Then to start a program:
+##
+##     cd bin
+##     ./program
+##
 
 : ${FC=gfortran}
-: ${CXX=g++}
 : ${RC=windres}
 
-AFORANDROMEDA_DIR="$(pwd)"
+PROGRAMMING_DIR="$(pwd)"
 
-AFORANDROMEDA_SRCDIR="${AFORANDROMEDA_DIR}/src"
+BIN_DIR="${PROGRAMMING_DIR}/bin"
+LIB_DIR="${PROGRAMMING_DIR}/lib"
+INC_DIR="${PROGRAMMING_DIR}/finclude"
 
-BMODS_DIR="${AFORANDROMEDA_SRCDIR}/basic-modules"
-OMODS_DIR="${AFORANDROMEDA_SRCDIR}/ode-modules"
+FORTRANSDL2_DIR="${PROGRAMMING_DIR}/fortran-sdl2"
+FORTRANSDL2_LIB="${LIB_DIR}/libfortran-sdl2.a"
 
-FORTRAN_SDL2_DIR="${AFORANDROMEDA_DIR}/fortran-sdl2"
-BIN_DIR="${AFORANDROMEDA_DIR}/bin"
-FPARSER_DIR="${AFORANDROMEDA_DIR}/fparser-4.5.2"
+BASICMODS_DIR="${PROGRAMMING_DIR}/basic_mods"
+BASICMODS_LIB="${LIB_DIR}/libbasic_mods.a"
 
-SDL2_FORTRAN_APPS_DIR="${AFORANDROMEDA_SRCDIR}/sdl2-fortran.apps"
-WIN32_FORTRAN_APPS_DIR="${AFORANDROMEDA_SRCDIR}/win32-fortran.apps"
+FORTRANSDL2APPS_DIR="${PROGRAMMING_DIR}/fortran-sdl2apps"
+FORTRANSDL2APPS_LIB="${LIB_DIR}/libfortran-sdl2apps.a"
 
-NBODY_DIR="${AFORANDROMEDA_SRCDIR}/N-Body"
-ODETS_DIR="${AFORANDROMEDA_SRCDIR}/ODE-Tests"
-TF_DIR="${AFORANDROMEDA_SRCDIR}/Thomas-Fermi"
-FPFORTRAN_DIR="${AFORANDROMEDA_SRCDIR}/fparser-fortran"
+FPARSER452_DIR="${PROGRAMMING_DIR}/fparser-4.5.2"
+FORTRANFPARSER_DIR="${PROGRAMMING_DIR}/fortran-fparser"
+FORTRANFPARSER_LIB="${LIB_DIR}/libfortran-fparser.a"
+FPCPP_LIB="${LIB_DIR}/libfpc++.a"
 
-SDL2F90=(${FORTRAN_SDL2_DIR}/src/{c_util,sdl2/{sdl2_stdinc,sdl2_audio,sdl2_blendmode,sdl2_cpuinfo,sdl2_gamecontroller,sdl2_error,sdl2_events,sdl2_filesystem,sdl2_hints,sdl2_joystick,sdl2_keyboard,sdl2_log,sdl2_messagebox,sdl2_rect,sdl2_pixels,sdl2_platform,sdl2_scancode,sdl2_surface,sdl2_render,sdl2_keycode,sdl2_mouse,sdl2_rwops,sdl2_thread,sdl2_timer,sdl2_version,sdl2_video,sdl2_opengl},sdl2}.f90)
+FORTRANW32_DIR="${PROGRAMMING_DIR}/fortran-win32"
+FORTRANW32_LIB="${LIB_DIR}/libfortran-win32.a"
+FORTRANWBOX_LIB="${LIB_DIR}/libfortran-win32box.a"
+FORTRANWAPP_LIB="${LIB_DIR}/libfortran-win32app.a"
 
-SDL2F90=${SDL2F90[@]}
+ODEMODS_DIR="${PROGRAMMING_DIR}/ode_mods"
+ODEMODS_LIB="${LIB_DIR}/libode_mods.a"
 
+if [ ! -e "${BIN_DIR}" ] ; then
+    mkdir -p "${BIN_DIR}"
+fi
+
+if [ ! -e "${LIB_DIR}" ] ; then
+    mkdir -p "${LIB_DIR}"
+fi
+
+if [ ! -e "${INC_DIR}" ] ; then
+    mkdir -p "${INC_DIR}"
+fi
+
+## MSYS2/UCRT64 _is_ MINGW64!!!
 MINGW64_OS=`uname -s | grep MINGW64`
 
 if [ "${MINGW64_OS}" != "" ] ; then
-    ## MinGW64 static build
+    ## MINGW64 static build
     LIBS="-static -lmingw32 -lSDL2main -lSDL2 -lws2_32 -ldinput8 -ldxguid -ldxerr8 -luser32 -lgdi32 -lwinmm -limm32 -lole32 -loleaut32 -lshell32 -lversion -luuid -lcomdlg32 -lhid -lsetupapi"
     EXE=.exe
 else
@@ -56,64 +78,165 @@ else
     EXE=.out
 fi
 
-if [ ! -e "${FORTRAN_SDL2_DIR}" ] ; then
+## ------------------------------------------------------------
+##  S T A R T  T H E  B U I L D  O F  T H E  L I B R A R I E S
+## ------------------------------------------------------------
+
+if [ ! -f "${BASICMODS_LIB}" ] ; then
+
+    echo "Building ${BASICMODS_LIB##*/} ..."
     echo
-    echo -n "Cloning ${FORTRAN_SDL2_DIR} ... "
 
-    ## ${FORTRAN_SDL2_DIR##*/}: remove the longest string "*/" from
-    ## the front of ${FORTRAN_SDL2_DIR}
-    git clone -q https://github.com/interkosmos/${FORTRAN_SDL2_DIR##*/}.git
+    cd "${BASICMODS_DIR}"
 
-    echo "done."
-    echo
-fi
-
-if [ ! -e "${BIN_DIR}" ] ; then
-    mkdir -p "${BIN_DIR}"
-fi
-
-if [ ! -e "${FPARSER_DIR}" ] ; then
-    echo
-    echo -n "Downloading FPARSER source package ... "
-
-    wget -q http://warp.povusers.org/FunctionParser/fparser4.5.2.zip
-    aunpack -q fparser4.5.2.zip -X fparser-4.5.2/ > /dev/null
-
-    rm -rf fparser4.5.2.zip
-
-    echo "done."
-
-    echo -n "Building FPARSER package ... "
-
-    cd fparser-4.5.2
-
-    ${CXX} -DFP_SUPPORT_FLOAT_TYPE \
-       -DFP_SUPPORT_LONG_DOUBLE_TYPE \
-       -DFP_SUPPORT_LONG_INT_TYPE -DFP_SUPPORT_COMPLEX_DOUBLE_TYPE \
-       -DFP_SUPPORT_COMPLEX_FLOAT_TYPE -DFP_SUPPORT_COMPLEX_LONG_DOUBLE_TYPE \
-       -DFP_USE_THREAD_SAFE_EVAL -DFP_USE_THREAD_SAFE_EVAL_WITH_ALLOCA \
-       -c fparser.cc
-
-    ${CXX} -DFP_SUPPORT_FLOAT_TYPE \
-       -DFP_SUPPORT_LONG_DOUBLE_TYPE \
-       -DFP_SUPPORT_LONG_INT_TYPE -DFP_SUPPORT_COMPLEX_DOUBLE_TYPE \
-       -DFP_SUPPORT_COMPLEX_FLOAT_TYPE -DFP_SUPPORT_COMPLEX_LONG_DOUBLE_TYPE \
-       -DFP_USE_THREAD_SAFE_EVAL -DFP_USE_THREAD_SAFE_EVAL_WITH_ALLOCA \
-       -c fpoptimizer.cc
-
-    mv *.o ../src/fparser-fortran/
-
-    cd ../src/fparser-fortran
-    ${CXX} -I ../../fparser-4.5.2 -c cwrapper_fparser.cc
-    ar rcs libFParser.a fparser.o fpoptimizer.o cwrapper_fparser.o
-
-    echo "done."
+    make FFLAGS='-Wall -std=f2018 -fmax-errors=1 -O3' all
+    mv ${BASICMODS_LIB##*/} "${LIB_DIR}"
+    mv *.mod "${INC_DIR}"
+    make clean
     echo
 fi
 
-cd "${AFORANDROMEDA_SRCDIR}"
+if [ ! -f "${ODEMODS_LIB}" ] ; then
 
-## First, build in SRC directory
+    echo "Building ${ODEMODS_LIB##*/} ..."
+    echo
+
+    cd "${ODEMODS_DIR}"
+
+    make FFLAGS='-Wall -std=f2018 -fmax-errors=1 -O3' all
+    mv ${ODEMODS_LIB##*/} "${LIB_DIR}"
+    mv *.mod "${INC_DIR}"
+    make clean
+    echo
+fi
+
+if [ ! -f "${FORTRANW32_LIB}" ] || [ ! -f "${FORTRANWBOX_LIB}" ] || [ ! -f "${FORTRANWAPP_LIB}" ]; then
+
+    echo "Building ${FORTRANW32_LIB##*/}, ${FORTRANWBOX_LIB##*/} and ${FORTRANWAPP_LIB##*/} ..."
+    echo
+
+    cd "${FORTRANW32_DIR}"
+
+    make FFLAGS='-Wall -std=f2018 -fmax-errors=1 -O3' all
+    mv *.a "${LIB_DIR}"
+    mv *.mod "${INC_DIR}"
+    make clean
+    echo
+fi
+
+## ${FORTRANSDL2_DIR##*/} and friends: remove the longest string "*/" from the
+## front of ${FORTRANSDL2_DIR}
+if [ ! -f "${FORTRANSDL2_LIB}" ] ; then
+
+    echo "Building ${FORTRANSDL2_LIB##*/} ..."
+    echo
+
+    if [ ! -e "${FORTRANSDL2_DIR}" ] ; then
+        echo
+        echo -n "Cloning ${FORTRANSDL2_DIR##*/} ... "
+
+        cd "${PROGRAMMING_DIR}"
+
+        git clone -q https://github.com/interkosmos/${FORTRANSDL2_DIR##*/}.git
+
+        echo "done."
+        echo
+    fi
+
+    cd "${FORTRANSDL2_DIR}"
+
+    make FFLAGS='-Wall -std=f2018 -fmax-errors=1 $(SDL_CFLAGS) -O3' all
+    mv ${FORTRANSDL2_LIB##*/} "${LIB_DIR}"
+    mv c_util.mod glu.mod sdl2*.mod "${INC_DIR}"
+    make clean
+    echo
+fi
+
+if [ ! -f "${FORTRANSDL2APPS_LIB}" ] ; then
+
+    echo "Building ${FORTRANSDL2APPS_LIB##*/} ..."
+    echo
+
+    cd "${FORTRANSDL2APPS_DIR}"
+
+    make FFLAGS='-Wall -std=f2018 -fmax-errors=1 -O3' all
+    mv ${FORTRANSDL2APPS_LIB##*/} "${LIB_DIR}"
+    mv *.mod "${INC_DIR}"
+    make clean
+    echo
+fi
+
+if [ ! -f "${FORTRANFPARSER_LIB}" ] || [ ! -f "${FPCPP_LIB}" ]; then
+
+    echo "Building ${FORTRANFPARSER_LIB##*/} and ${FPCPP_LIB##*/} ..."
+    echo
+
+    if [ ! -e "${FPARSER452_DIR}" ] ; then
+        echo
+        echo -n "Downloading fparser4.5.2.zip ... "
+
+        cd "${PROGRAMMING_DIR}"
+
+        wget -q http://warp.povusers.org/FunctionParser/fparser4.5.2.zip
+        aunpack -q fparser4.5.2.zip -X fparser-4.5.2/
+        rm -rf fparser4.5.2.zip
+
+        echo "done."
+        echo
+    fi
+
+    cd "${FORTRANFPARSER_DIR}"
+
+    make FFLAGS='-Wall -std=f2018 -fmax-errors=1 -O3' all
+    mv *.a "${LIB_DIR}"
+    mv *.mod "${INC_DIR}"
+    make clean
+    echo
+fi
+
+## ----------------------------------------------------------
+##  S T A R T  T H E  B U I L D  O F  T H E  P R O G R A M S
+## ----------------------------------------------------------
+
+cd "${PROGRAMMING_DIR}/apophis"
+
+program_name="apophis"
+if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
+    ## Just an alternative (almost) is
+    ##
+    ##   echo -n "Building ${program_name} ... " | tr '[:lower:]' '[:upper:]'
+    ##
+    ## because the following does NOT work OB on macOS
+    echo -n "Building ${program_name^^} ... "
+    rm -rf *.mod
+    ${FC} -std=f2018 -O3 -Wall -Wno-unused-dummy-argument -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods -lode_mods -lfortran-sdl2apps -lfortran-sdl2 ${LIBS}
+    rm -rf *.mod
+    mv ${program_name}${EXE} "${BIN_DIR}"
+    echo "done."
+fi
+
+## ----------------------------------------------------------
+
+cd "${PROGRAMMING_DIR}/black_hole"
+
+program_name="black_hole"
+if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
+    ## Just an alternative (almost) is
+    ##
+    ##   echo -n "Building ${program_name} ... " | tr '[:lower:]' '[:upper:]'
+    ##
+    ## because the following does NOT work OB on macOS
+    echo -n "Building ${program_name^^} ... "
+    rm -rf *.mod
+    ${FC} -std=f2018 -O3 -Wall -Wno-unused-dummy-argument -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods -lfortran-sdl2apps -lfortran-sdl2 ${LIBS}
+    rm -rf *.mod
+    mv ${program_name}${EXE} "${BIN_DIR}"
+    echo "done."
+fi
+
+## ----------------------------------------------------------
+
+cd "${PROGRAMMING_DIR}/brkmtlsk"
 
 program_name="brooks_matelski"
 if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
@@ -124,128 +247,24 @@ if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
     ## because the following does NOT work OB on macOS
     echo -n "Building ${program_name^^} ... "
     rm -rf *.mod
-    ${FC} -std=f2018 -O3 -Wall ${program_name}.f90 -o ${program_name}${EXE}
+    ## We do not need _all this_ but we use it to get a static build
+    ${FC} -std=f2018 -O3 -Wall ${program_name}.f90 -o ${program_name}${EXE} ${LIBS}
     rm -rf *.mod
     mv ${program_name}${EXE} "${BIN_DIR}"
     echo "done."
 fi
-
-program_name="cbrt_test"
-if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
-    echo -n "Building ${program_name^^} ... "
-    rm -rf *.mod
-    ${FC} -std=f2018 -O3 -Wall ${program_name}.f90 -o ${program_name}${EXE}
-    rm -rf *.mod
-    mv ${program_name}${EXE} "${BIN_DIR}"
-    echo "done."
-fi
-
-program_name="plnml_test"
-if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
-    echo -n "Building ${program_name^^} ... "
-    rm -rf *.mod
-    ${FC} -std=f2018 -O3 -Wall ${program_name}.f90 -o ${program_name}${EXE}
-    rm -rf *.mod
-    mv ${program_name}${EXE} "${BIN_DIR}"
-    echo "done."
-fi
-
-program_name="solve_equation"
-if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
-    echo -n "Building ${program_name^^} ... "
-    rm -rf *.mod
-    ${FC} -std=f2018 -O3 -Wall -Wno-unused-function \
-          ${program_name}.f90 -o ${program_name}${EXE}
-    rm -rf *.mod
-    mv ${program_name}${EXE} "${BIN_DIR}"
-    echo "done."
-fi
-
-cd "${SDL2_FORTRAN_APPS_DIR}"
-
-program_name="display_ppm"
-if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
-    echo -n "Building ${program_name^^} ... "
-    rm -rf *.mod
-    ${FC} -std=f2018 -O3 -Wall \
-          ${BMODS_DIR}/{{kind,math}_consts,nicelabels}.f90 ${SDL2F90} \
-          SDL2_app.f90 ${program_name}.f90 ${LIBS} -o ${program_name}${EXE}
-    rm -rf *.mod
-    mv ${program_name}${EXE} "${BIN_DIR}"
-    echo "done."
-fi
-
-program_name="koch_snowflake"
-if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
-    echo -n "Building ${program_name^^} ... "
-    rm -rf *.mod
-    ${FC} -std=f2018 -O3 -Wall \
-          ${BMODS_DIR}/{{kind,math}_consts,nicelabels}.f90 ${SDL2F90} \
-          SDL2_app.f90 ${program_name}.f90 ${LIBS} -o ${program_name}${EXE}
-    rm -rf *.mod
-    mv ${program_name}${EXE} "${BIN_DIR}"
-    echo "done."
-fi
-
-program_name="star_walk_2d"
-if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
-    echo -n "Building ${program_name^^} ... "
-    rm -rf *.mod
-    ${FC} -std=f2018 -O3 -Wall \
-          ${BMODS_DIR}/{{kind,math}_consts,getdata,nicelabels}.f90 ${SDL2F90} \
-          SDL2_{app,shading}.f90 ${program_name}.f90 ${LIBS} \
-          -o ${program_name}${EXE}
-    rm -rf *.mod
-    mv ${program_name}${EXE} "${BIN_DIR}"
-    echo "done."
-fi
-
-program_name="colour_map"
-if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
-    echo -n "Building ${program_name^^} ... "
-    rm -rf *.mod
-    ${FC} -std=f2018 -O3 -Wall \
-          ${BMODS_DIR}/{{kind,math}_consts,nicelabels}.f90 ${SDL2F90} \
-          SDL2_{app,shading}.f90 \
-          ${program_name}.f90 ${LIBS} -o ${program_name}${EXE}
-    rm -rf *.mod
-    mv ${program_name}${EXE} "${BIN_DIR}"
-    echo "done."
-fi
-
-program_name="bouncing"
-if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
-    echo -n "Building ${program_name^^} ... "
-    rm -rf *.mod
-    ${FC} -std=f2018 -O3 -Wall \
-          ${BMODS_DIR}/{{kind,math}_consts,getdata,nicelabels}.f90 ${SDL2F90} \
-          SDL2_{app,shading}.f90 \
-          ${program_name}.f90 ${LIBS} -o ${program_name}${EXE}
-    rm -rf *.mod
-    mv ${program_name}${EXE} "${BIN_DIR}"
-    echo "done."
-fi
-
-program_name="plot_ellipse"
-if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
-    echo -n "Building ${program_name^^} ... "
-    rm -rf *.mod
-    ${FC} -std=f2018 -O3 -Wall \
-          ${BMODS_DIR}/{{kind,math}_consts,getdata,nicelabels}.f90 ${SDL2F90} \
-          SDL2_app.f90 \
-          ${program_name}.f90 ${LIBS} -o ${program_name}${EXE}
-    rm -rf *.mod
-    mv ${program_name}${EXE} "${BIN_DIR}"
-    echo "done."
-fi
-
-cd brkmtlsk
 
 program_name="brkmtlsk_calc"
 if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
+    ## Just an alternative (almost) is
+    ##
+    ##   echo -n "Building ${program_name} ... " | tr '[:lower:]' '[:upper:]'
+    ##
+    ## because the following does NOT work OB on macOS
     echo -n "Building ${program_name^^} ... "
     rm -rf *.mod
-    ${FC} -std=f2018 -O3 -Wall ${program_name}.f90 -o ${program_name}${EXE}
+    ## We do not need _all this_ but we use it to get a static build
+    ${FC} -std=f2018 -O3 -Wall -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods ${LIBS}
     rm -rf *.mod
     mv ${program_name}${EXE} "${BIN_DIR}"
     echo "done."
@@ -253,152 +272,67 @@ fi
 
 program_name="display_brkmtlsk"
 if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
+    ## Just an alternative (almost) is
+    ##
+    ##   echo -n "Building ${program_name} ... " | tr '[:lower:]' '[:upper:]'
+    ##
+    ## because the following does NOT work OB on macOS
     echo -n "Building ${program_name^^} ... "
     rm -rf *.mod
-    ${FC} -std=f2018 -O3 -Wall \
-          ${BMODS_DIR}/{{kind,math}_consts,nicelabels}.f90 ${SDL2F90} \
-          ../SDL2_app.f90 ${program_name}.f90 ${LIBS} -o ${program_name}${EXE}
+    ${FC} -std=f2018 -O3 -Wall -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods -lfortran-sdl2apps -lfortran-sdl2 ${LIBS}
     rm -rf *.mod
     mv ${program_name}${EXE} "${BIN_DIR}"
     echo "done."
 fi
 
-cd ../mandelzoom
+## ----------------------------------------------------------
 
-program_name="mandelzoom"
+cd "${PROGRAMMING_DIR}/circle_3p"
+
+program_name="circle_3p"
 if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
+    ## Just an alternative (almost) is
+    ##
+    ##   echo -n "Building ${program_name} ... " | tr '[:lower:]' '[:upper:]'
+    ##
+    ## because the following does NOT work OB on macOS
     echo -n "Building ${program_name^^} ... "
     rm -rf *.mod
-    ${FC} -std=f2018 -O3 -Wall \
-          ${BMODS_DIR}/{{kind,math}_consts,ft_timer_m,getdata,nicelabels}.f90 \
-          ${SDL2F90} ../SDL2_app.f90 \
-          ${program_name}.f90 ${LIBS} -o ${program_name}${EXE}
+    ${FC} -std=f2018 -O3 -Wall -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods -lfortran-sdl2apps -lfortran-sdl2 ${LIBS}
     rm -rf *.mod
     mv ${program_name}${EXE} "${BIN_DIR}"
     echo "done."
 fi
 
-cd ../poisson2D_solver
+## ----------------------------------------------------------
 
-program_name="poisson2D_solver"
-if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
-    echo -n "Building ${program_name^^} ... "
-    rm -rf *.mod
-    ${FC} -std=f2018 -O3 -Wall \
-          ${BMODS_DIR}/{{kind,math}_consts,getdata,nicelabels}.f90 \
-          ${SDL2F90} ../SDL2_{app,shading}.f90 \
-          ${program_name}.f90 ${LIBS} -o ${program_name}${EXE}
-    rm -rf *.mod
-    mv ${program_name}${EXE} "${BIN_DIR}"
-    echo "done."
-fi
-
-cd ../heat1D_solver
-
-program_name="heat1D_solver"
-if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
-    echo -n "Building ${program_name^^} ... "
-    rm -rf *.mod
-    ${FC} -std=f2018 -O3 -Wall \
-          ${BMODS_DIR}/{{kind,math}_consts,additional_functions,utilities,getdata,nicelabels}.f90 ${SDL2F90} \
-          ../../fparser-fortran/fparser_dp.f90 ../SDL2_{app,shading}.f90 \
-          ${program_name}.f90 ${LIBS} \
-          -L ../../fparser-fortran -lFParser -lstdc++ \
-          -o ${program_name}${EXE}
-    rm -rf *.mod
-    mv ${program_name}${EXE} "${BIN_DIR}"
-    echo "done."
-fi
-
-cd ../complex-dynamics
-
-program_name="complexplot"
-if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
-    echo -n "Building ${program_name^^} ... "
-    rm -rf *.mod
-    ${FC} -std=f2018 -O3 -Wall \
-          ${BMODS_DIR}/{{kind,math}_consts,additional_functions,ft_timer_m,utilities,getdata,nicelabels}.f90 ${SDL2F90} \
-          ../../fparser-fortran/fparser_cd.f90 ../SDL2_app.f90 \
-          ${program_name}.f90 ${LIBS} \
-          -L ../../fparser-fortran -lFParser -lstdc++ \
-          -o ${program_name}${EXE}
-    rm -rf *.mod
-    mv ${program_name}${EXE} "${BIN_DIR}"
-    echo "done."
-fi
-
-program_name="flux_stream"
-if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
-    echo -n "Building ${program_name^^} ... "
-    rm -rf *.mod
-    ${FC} -std=f2018 -O3 -Wall \
-          ${BMODS_DIR}/{{kind,math}_consts,additional_functions,ft_timer_m,utilities,getdata,nicelabels,contour_plots}.f90 ${SDL2F90} \
-          ../../fparser-fortran/fparser_cd.f90 ../SDL2_app.f90 \
-          ${program_name}.f90 ${LIBS} \
-          -L ../../fparser-fortran -lFParser -lstdc++ \
-          -o ${program_name}${EXE}
-    rm -rf *.mod
-    mv ${program_name}${EXE} "${BIN_DIR}"
-    echo "done."
-fi
-
-cd ../pendulums
-
-program_name="double_pendulum"
-if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
-    echo -n "Building ${program_name^^} ... "
-    rm -rf *.mod
-    ${FC} -std=f2018 -O3 -Wall -Wno-unused-dummy-argument \
-          ${BMODS_DIR}/{{kind,math}_consts,getdata,nicelabels}.f90 \
-          ${OMODS_DIR}/{everhart,ode}_integrator.f90 \
-          ${SDL2F90} ../SDL2_app.f90 \
-          ${program_name}.f90 ${LIBS} -o ${program_name}${EXE}
-    rm -rf *.mod
-    mv ${program_name}${EXE} "${BIN_DIR}"
-    echo "done."
-fi
-
-cd ../lorenz
-
-program_name="lorenz_attractor"
-if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
-    echo -n "Building ${program_name^^} ... "
-    rm -rf *.mod
-    ${FC} -std=f2018 -O3 -Wall -Wno-unused-dummy-argument \
-          ${BMODS_DIR}/{{kind,math}_consts,getdata,nicelabels}.f90 \
-          ${OMODS_DIR}/{everhart,ode}_integrator.f90 \
-          ${SDL2F90} ../SDL2_{app,shading}.f90 \
-          ${program_name}.f90 ${LIBS} -o ${program_name}${EXE}
-    rm -rf *.mod
-    mv ${program_name}${EXE} "${BIN_DIR}"
-    echo "done."
-fi
-
-cd "${NBODY_DIR}"
+cd "${PROGRAMMING_DIR}/close_encounters"
 
 program_name="calc_orbits"
 if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
+    ## Just an alternative (almost) is
+    ##
+    ##   echo -n "Building ${program_name} ... " | tr '[:lower:]' '[:upper:]'
+    ##
+    ## because the following does NOT work OB on macOS
     echo -n "Building ${program_name^^} ... "
     rm -rf *.mod
-    ${FC} -std=f2018 -O3 -funroll-loops -Wall \
-          -Wno-unused-dummy-argument \
-          ${BMODS_DIR}/{{kind,math}_consts,ft_timer_m,getdata}.f90 \
-          ${OMODS_DIR}/everhart_integrator.f90 \
-          ${program_name}.f90 -o ${program_name}${EXE}
+    ${FC} -std=f2018 -O3 -Wall -Wno-unused-dummy-argument -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods -lode_mods ${LIBS}
     rm -rf *.mod
     mv ${program_name}${EXE} "${BIN_DIR}"
-    rsync -a close_encounters.cards "${BIN_DIR}/"
     echo "done."
 fi
 
 program_name="process_orbits"
 if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
+    ## Just an alternative (almost) is
+    ##
+    ##   echo -n "Building ${program_name} ... " | tr '[:lower:]' '[:upper:]'
+    ##
+    ## because the following does NOT work OB on macOS
     echo -n "Building ${program_name^^} ... "
     rm -rf *.mod
-    ${FC} -std=f2018 -O3 -funroll-loops -Wall \
-          -Wno-unused-dummy-argument ${BMODS_DIR}/{kind,math}_consts.f90 \
-          ${BMODS_DIR}/{ft_timer_m,getdata,julian_dates}.f90 \
-          ${program_name}.f90 -o ${program_name}${EXE}
+    ${FC} -std=f2018 -O3 -Wall -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods ${LIBS}
     rm -rf *.mod
     mv ${program_name}${EXE} "${BIN_DIR}"
     echo "done."
@@ -406,148 +340,405 @@ fi
 
 program_name="test_jsunp"
 if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
+    ## Just an alternative (almost) is
+    ##
+    ##   echo -n "Building ${program_name} ... " | tr '[:lower:]' '[:upper:]'
+    ##
+    ## because the following does NOT work OB on macOS
     echo -n "Building ${program_name^^} ... "
     rm -rf *.mod
-    ${FC} -std=f2018 -O3 -funroll-loops -Wall \
-          -Wno-unused-dummy-argument \
-          ${BMODS_DIR}/{kind,math}_consts.f90 \
-          ${OMODS_DIR}/{everhart_integrator,cernlib_integrators}.f90 \
-          ${program_name}.f90 -o ${program_name}${EXE}
+    ${FC} -std=f2018 -O3 -Wall -Wno-unused-dummy-argument -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods -lode_mods ${LIBS}
     rm -rf *.mod
     mv ${program_name}${EXE} "${BIN_DIR}"
     echo "done."
 fi
 
-cd apophis
+## ----------------------------------------------------------
 
-program_name="apophis"
+cd "${PROGRAMMING_DIR}/complex-dynamics"
+
+program_name="complexplot"
 if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
+    ## Just an alternative (almost) is
+    ##
+    ##   echo -n "Building ${program_name} ... " | tr '[:lower:]' '[:upper:]'
+    ##
+    ## because the following does NOT work OB on macOS
     echo -n "Building ${program_name^^} ... "
     rm -rf *.mod
-    ${FC} -std=f2018 -O3 -funroll-loops -Wall \
-          -Wno-unused-dummy-argument \
-          ${BMODS_DIR}/{{kind,math}_consts,getdata,julian_dates,nicelabels,camera_view_m}.f90 \
-          ${OMODS_DIR}/everhart_integrator.f90 \
-          ${SDL2F90} ../../sdl2-fortran.apps/SDL2_{app,shading}.f90 \
-          ${program_name}.f90 ${LIBS} -o ${program_name}${EXE}
+    ${FC} -std=f2018 -O3 -Wall -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lfortran-fparser -lbasic_mods -lfortran-sdl2apps -lfortran-sdl2 -lfpc++ -lstdc++ ${LIBS}
     rm -rf *.mod
     mv ${program_name}${EXE} "${BIN_DIR}"
     echo "done."
 fi
 
-cd ../three_bodies
-
-program_name="three_bodies"
+program_name="flux_stream"
 if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
+    ## Just an alternative (almost) is
+    ##
+    ##   echo -n "Building ${program_name} ... " | tr '[:lower:]' '[:upper:]'
+    ##
+    ## because the following does NOT work OB on macOS
     echo -n "Building ${program_name^^} ... "
     rm -rf *.mod
-    ${FC} -std=f2018 -O3 -funroll-loops -Wall \
-          -Wno-unused-dummy-argument \
-          ${BMODS_DIR}/{{kind,math}_consts,ft_timer_m,getdata,nicelabels,camera_view_m}.f90 \
-          ${OMODS_DIR}/{everhart,ode}_integrator.f90 \
-          ${SDL2F90} ../../sdl2-fortran.apps/SDL2_{app,shading}.f90 \
-          ${program_name}.f90 ${LIBS} -o ${program_name}${EXE}
+    ${FC} -std=f2018 -O3 -Wall -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lfortran-fparser -lbasic_mods -lfortran-sdl2apps -lfortran-sdl2 -lfpc++ -lstdc++ ${LIBS}
     rm -rf *.mod
     mv ${program_name}${EXE} "${BIN_DIR}"
     echo "done."
 fi
 
-cd "${ODETS_DIR}"
+## ----------------------------------------------------------
 
-program_name="Euler"
+cd "${PROGRAMMING_DIR}/double_pendulum"
+
+program_name="double_pendulum"
 if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
+    ## Just an alternative (almost) is
+    ##
+    ##   echo -n "Building ${program_name} ... " | tr '[:lower:]' '[:upper:]'
+    ##
+    ## because the following does NOT work OB on macOS
     echo -n "Building ${program_name^^} ... "
     rm -rf *.mod
-    ${FC} -std=f2018 -O3 -funroll-loops -Wall \
-          -Wno-unused-dummy-argument \
-          ${BMODS_DIR}/{{kind,math}_consts,getdata}.f90 \
-          ${OMODS_DIR}/{everhart,ode}_integrator.f90 \
-          ${program_name}.f90 -o ${program_name}${EXE}
+    ${FC} -std=f2018 -O3 -Wall -Wno-unused-dummy-argument -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods -lode_mods -lfortran-sdl2apps -lfortran-sdl2 ${LIBS}
     rm -rf *.mod
     mv ${program_name}${EXE} "${BIN_DIR}"
     echo "done."
 fi
 
-program_name="Filippi"
+## ----------------------------------------------------------
+
+cd "${PROGRAMMING_DIR}/forces"
+
+program_name="forcesfp"
 if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
+    ## Just an alternative (almost) is
+    ##
+    ##   echo -n "Building ${program_name} ... " | tr '[:lower:]' '[:upper:]'
+    ##
+    ## because the following does NOT work OB on macOS
     echo -n "Building ${program_name^^} ... "
     rm -rf *.mod
-    ${FC} -std=f2018 -O3 -funroll-loops -Wall \
-          -Wno-unused-dummy-argument \
-          ${BMODS_DIR}/{{kind,math}_consts,getdata}.f90 \
-          ${OMODS_DIR}/{everhart,ode}_integrator.f90 \
-          ${program_name}.f90 -o ${program_name}${EXE}
+    ${FC} -std=f2018 -O3 -Wall -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lfortran-fparser -lbasic_mods -lfortran-sdl2apps -lfortran-sdl2 -lfpc++ -lstdc++ ${LIBS}
     rm -rf *.mod
     mv ${program_name}${EXE} "${BIN_DIR}"
     echo "done."
 fi
 
-program_name="decay_field"
+## ----------------------------------------------------------
+
+cd "${PROGRAMMING_DIR}/foucault"
+
+program_name="foucault"
 if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
+    ## Just an alternative (almost) is
+    ##
+    ##   echo -n "Building ${program_name} ... " | tr '[:lower:]' '[:upper:]'
+    ##
+    ## because the following does NOT work OB on macOS
     echo -n "Building ${program_name^^} ... "
     rm -rf *.mod
-    ${FC} -std=f2018 -O3 -funroll-loops -Wall \
-          -Wno-unused-dummy-argument \
-          ${BMODS_DIR}/kind_consts.f90 \
-          ${OMODS_DIR}/{everhart,ode}_integrator.f90 \
-          ${program_name}.f90 -o ${program_name}${EXE}
+    ${FC} -std=f2018 -O3 -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods -lfortran-sdl2apps -lfortran-sdl2 ${LIBS}
     rm -rf *.mod
     mv ${program_name}${EXE} "${BIN_DIR}"
     echo "done."
 fi
 
-cd "${TF_DIR}"
+## ----------------------------------------------------------
 
-program_name="thomas_fermi-ra15"
+cd "${PROGRAMMING_DIR}/heat1D_solver"
+
+program_name="heat1D_solver"
 if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
+    ## Just an alternative (almost) is
+    ##
+    ##   echo -n "Building ${program_name} ... " | tr '[:lower:]' '[:upper:]'
+    ##
+    ## because the following does NOT work OB on macOS
     echo -n "Building ${program_name^^} ... "
     rm -rf *.mod
-    ${FC} -std=f2018 -O3 -funroll-loops -Wall \
-          -Wno-unused-dummy-argument \
-          ${BMODS_DIR}/{{kind,math}_consts,ft_timer_m,getdata}.f90 \
-          ${OMODS_DIR}/everhart_integrator.f90 \
-          ${program_name}.f90 -o ${program_name}${EXE}
+    ${FC} -std=f2018 -O3 -Wall -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lfortran-fparser -lbasic_mods -lfortran-sdl2apps -lfortran-sdl2 -lfpc++ -lstdc++ ${LIBS}
     rm -rf *.mod
     mv ${program_name}${EXE} "${BIN_DIR}"
     echo "done."
 fi
 
-cd "${FPFORTRAN_DIR}"
+## ----------------------------------------------------------
 
-program_name="fparser_test"
+cd "${PROGRAMMING_DIR}/joke"
+
+program_name="bouncing"
 if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
+    ## Just an alternative (almost) is
+    ##
+    ##   echo -n "Building ${program_name} ... " | tr '[:lower:]' '[:upper:]'
+    ##
+    ## because the following does NOT work OB on macOS
     echo -n "Building ${program_name^^} ... "
     rm -rf *.mod
-    ${FC} -std=f2018 -Wall ${BMODS_DIR}/{kind_consts,getdata,utilities}.f90 \
-          fparser_dp.f90 fparser_cd.f90  ${program_name}.f90 \
-          -L . -lFParser -lstdc++ -o ${program_name}${EXE}
+    ${FC} -std=f2018 -O3 -Wall -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods -lfortran-sdl2apps -lfortran-sdl2 ${LIBS}
     rm -rf *.mod
     mv ${program_name}${EXE} "${BIN_DIR}"
     echo "done."
 fi
 
-## Do not build Windows app on other OSes
-if [ "${MINGW64_OS}" != "" ] ; then
+program_name="colour_map"
+if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
+    ## Just an alternative (almost) is
+    ##
+    ##   echo -n "Building ${program_name} ... " | tr '[:lower:]' '[:upper:]'
+    ##
+    ## because the following does NOT work OB on macOS
+    echo -n "Building ${program_name^^} ... "
+    rm -rf *.mod
+    ${FC} -std=f2018 -O3 -Wall -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods -lfortran-sdl2apps -lfortran-sdl2 ${LIBS}
+    rm -rf *.mod
+    mv ${program_name}${EXE} "${BIN_DIR}"
+    echo "done."
+fi
 
-    ## Windows apps
+program_name="display_ppm"
+if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
+    ## Just an alternative (almost) is
+    ##
+    ##   echo -n "Building ${program_name} ... " | tr '[:lower:]' '[:upper:]'
+    ##
+    ## because the following does NOT work OB on macOS
+    echo -n "Building ${program_name^^} ... "
+    rm -rf *.mod
+    ${FC} -std=f2018 -O3 -Wall -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lfortran-sdl2apps -lfortran-sdl2 ${LIBS}
+    rm -rf *.mod
+    mv ${program_name}${EXE} "${BIN_DIR}"
+    echo "done."
+fi
 
-    cd "${WIN32_FORTRAN_APPS_DIR}"
+program_name="koch_snowflake"
+if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
+    ## Just an alternative (almost) is
+    ##
+    ##   echo -n "Building ${program_name} ... " | tr '[:lower:]' '[:upper:]'
+    ##
+    ## because the following does NOT work OB on macOS
+    echo -n "Building ${program_name^^} ... "
+    rm -rf *.mod
+    ${FC} -std=f2018 -O3 -Wall -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods -lfortran-sdl2apps -lfortran-sdl2 ${LIBS}
+    rm -rf *.mod
+    mv ${program_name}${EXE} "${BIN_DIR}"
+    echo "done."
+fi
 
-    cd poisson2D.app
+program_name="plot_ellipse"
+if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
+    ## Just an alternative (almost) is
+    ##
+    ##   echo -n "Building ${program_name} ... " | tr '[:lower:]' '[:upper:]'
+    ##
+    ## because the following does NOT work OB on macOS
+    echo -n "Building ${program_name^^} ... "
+    rm -rf *.mod
+    ${FC} -std=f2018 -O3 -Wall -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods -lfortran-sdl2apps -lfortran-sdl2 ${LIBS}
+    rm -rf *.mod
+    mv ${program_name}${EXE} "${BIN_DIR}"
+    echo "done."
+fi
 
-    program_name="poisson2D"
-    if [ ! -f "${BIN_DIR}/${program_name}.exe" ] ; then
-        echo -n "Building ${program_name^^} ... "
-        rm -rf {*.mod,*.res}
-        ${RC} ${program_name}.rc -O coff -o ${program_name}.res
-        ${FC} -std=f2018 -O3 -Wall -Wall \
-              -Wno-unused-dummy-argument -Wno-maybe-uninitialized \
-              -static -mwindows ${BMODS_DIR}/{kind,math}_consts.f90 \
-              ../{win32,{basic,about,x,xy,radio}_box_m,win32app}.f90 \
-              ${program_name}.f90 ${program_name}.res -o ${program_name}.exe
-        rm -rf {*.mod,*.res}
-        mv ${program_name}.exe "${BIN_DIR}"
-        echo "done."
-    fi
+## ----------------------------------------------------------
 
+cd "${PROGRAMMING_DIR}/lorenz_attractor"
+
+program_name="lorenz_attractor"
+if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
+    ## Just an alternative (almost) is
+    ##
+    ##   echo -n "Building ${program_name} ... " | tr '[:lower:]' '[:upper:]'
+    ##
+    ## because the following does NOT work OB on macOS
+    echo -n "Building ${program_name^^} ... "
+    rm -rf *.mod
+    ${FC} -std=f2018 -O3 -Wall -Wno-unused-dummy-argument -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods -lode_mods -lfortran-sdl2apps -lfortran-sdl2 ${LIBS}
+    rm -rf *.mod
+    mv ${program_name}${EXE} "${BIN_DIR}"
+    echo "done."
+fi
+
+## ----------------------------------------------------------
+
+cd "${PROGRAMMING_DIR}/mandelzoom"
+
+program_name="mandelzoom"
+if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
+    ## Just an alternative (almost) is
+    ##
+    ##   echo -n "Building ${program_name} ... " | tr '[:lower:]' '[:upper:]'
+    ##
+    ## because the following does NOT work OB on macOS
+    echo -n "Building ${program_name^^} ... "
+    rm -rf *.mod
+    ${FC} -std=f2018 -O3 -Wall -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods -lfortran-sdl2apps -lfortran-sdl2 ${LIBS}
+    rm -rf *.mod
+    mv ${program_name}${EXE} "${BIN_DIR}"
+    echo "done."
+fi
+
+## ----------------------------------------------------------
+
+cd "${PROGRAMMING_DIR}/maps_attractors"
+
+program_name="henon_map"
+if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
+    ## Just an alternative (almost) is
+    ##
+    ##   echo -n "Building ${program_name} ... " | tr '[:lower:]' '[:upper:]'
+    ##
+    ## because the following does NOT work OB on macOS
+    echo -n "Building ${program_name^^} ... "
+    rm -rf *.mod
+    ${FC} -std=f2018 -O3 -Wall -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods -lfortran-sdl2apps -lfortran-sdl2 ${LIBS}
+    rm -rf *.mod
+    mv ${program_name}${EXE} "${BIN_DIR}"
+    echo "done."
+fi
+
+program_name="logistic_map"
+if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
+    ## Just an alternative (almost) is
+    ##
+    ##   echo -n "Building ${program_name} ... " | tr '[:lower:]' '[:upper:]'
+    ##
+    ## because the following does NOT work OB on macOS
+    echo -n "Building ${program_name^^} ... "
+    rm -rf *.mod
+    ${FC} -std=f2018 -O3 -Wall -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods -lfortran-sdl2apps -lfortran-sdl2 ${LIBS}
+    rm -rf *.mod
+    mv ${program_name}${EXE} "${BIN_DIR}"
+    echo "done."
+fi
+
+## ----------------------------------------------------------
+
+cd "${PROGRAMMING_DIR}/math_test"
+
+program_name="cbrt_test"
+if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
+    ## Just an alternative (almost) is
+    ##
+    ##   echo -n "Building ${program_name} ... " | tr '[:lower:]' '[:upper:]'
+    ##
+    ## because the following does NOT work OB on macOS
+    echo -n "Building ${program_name^^} ... "
+    rm -rf *.mod
+    ## We do not need _all this_ but we use it to get a static build
+    ${FC} -std=f2018 -O3 -Wall ${program_name}.f90 -o ${program_name}${EXE} ${LIBS}
+    rm -rf *.mod
+    mv ${program_name}${EXE} "${BIN_DIR}"
+    echo "done."
+fi
+
+program_name="plnml_test"
+if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
+    ## Just an alternative (almost) is
+    ##
+    ##   echo -n "Building ${program_name} ... " | tr '[:lower:]' '[:upper:]'
+    ##
+    ## because the following does NOT work OB on macOS
+    echo -n "Building ${program_name^^} ... "
+    rm -rf *.mod
+    ## We do not need _all this_ but we use it to get a static build
+    ${FC} -std=f2018 -O3 -Wall ${program_name}.f90 -o ${program_name}${EXE} ${LIBS}
+    rm -rf *.mod
+    mv ${program_name}${EXE} "${BIN_DIR}"
+    echo "done."
+fi
+
+program_name="solve_equation"
+if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
+    ## Just an alternative (almost) is
+    ##
+    ##   echo -n "Building ${program_name} ... " | tr '[:lower:]' '[:upper:]'
+    ##
+    ## because the following does NOT work OB on macOS
+    echo -n "Building ${program_name^^} ... "
+    rm -rf *.mod
+    ## We do not need _all this_ but we use it to get a static build
+    ${FC} -std=f2018 -O3 -Wall -Wno-unused-function ${program_name}.f90 -o ${program_name}${EXE} ${LIBS}
+    rm -rf *.mod
+    mv ${program_name}${EXE} "${BIN_DIR}"
+    echo "done."
+fi
+
+## ----------------------------------------------------------
+
+cd "${PROGRAMMING_DIR}/poisson2D-win32"
+
+program_name="poisson2D_win32"
+if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
+    ## Just an alternative (almost) is
+    ##
+    ##   echo -n "Building ${program_name} ... " | tr '[:lower:]' '[:upper:]'
+    ##
+    ## because the following does NOT work OB on macOS
+    echo -n "Building ${program_name^^} ... "
+    rm -rf {*.mod,*.res}
+    ${RC} ${program_name}.rc -O coff -o ${program_name}.res
+    ${FC} -std=f2018 -O3 -Wall -Wno-unused-dummy-argument -Wno-maybe-uninitialized -I ../finclude -static -mwindows ${program_name}.f90 -o ${program_name}${EXE} ${program_name}.res -L ../lib -lbasic_mods -lfortran-win32box -lfortran-win32app -lfortran-win32
+    rm -rf {*.mod,*.res}
+    mv ${program_name}${EXE} "${BIN_DIR}"
+    echo "done."
+fi
+
+## ----------------------------------------------------------
+
+cd "${PROGRAMMING_DIR}/star_walk"
+
+program_name="star_walk"
+if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
+    ## Just an alternative (almost) is
+    ##
+    ##   echo -n "Building ${program_name} ... " | tr '[:lower:]' '[:upper:]'
+    ##
+    ## because the following does NOT work OB on macOS
+    echo -n "Building ${program_name^^} ... "
+    rm -rf *.mod
+    ${FC} -std=f2018 -O3 -Wall -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods -lfortran-sdl2apps -lfortran-sdl2 ${LIBS}
+    rm -rf *.mod
+    mv ${program_name}${EXE} "${BIN_DIR}"
+    echo "done."
+fi
+
+## ----------------------------------------------------------
+
+cd "${PROGRAMMING_DIR}/thomas-fermi"
+
+program_name="thomas_fermi"
+if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
+    ## Just an alternative (almost) is
+    ##
+    ##   echo -n "Building ${program_name} ... " | tr '[:lower:]' '[:upper:]'
+    ##
+    ## because the following does NOT work OB on macOS
+    echo -n "Building ${program_name^^} ... "
+    rm -rf *.mod
+    ${FC} -std=f2018 -O3 -Wall -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods -lode_mods ${LIBS}
+    rm -rf *.mod
+    mv ${program_name}${EXE} "${BIN_DIR}"
+    echo "done."
+fi
+
+## ----------------------------------------------------------
+
+cd "${PROGRAMMING_DIR}/three_body_problem"
+
+program_name="three_body_problem"
+if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
+    ## Just an alternative (almost) is
+    ##
+    ##   echo -n "Building ${program_name} ... " | tr '[:lower:]' '[:upper:]'
+    ##
+    ## because the following does NOT work OB on macOS
+    echo -n "Building ${program_name^^} ... "
+    rm -rf *.mod
+    ${FC} -std=f2018 -O3 -Wall -Wno-unused-dummy-argument -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods -lode_mods -lfortran-sdl2apps -lfortran-sdl2 ${LIBS}
+    rm -rf *.mod
+    mv ${program_name}${EXE} "${BIN_DIR}"
+    echo "done."
 fi
