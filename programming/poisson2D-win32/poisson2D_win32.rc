@@ -7,7 +7,7 @@
 
 #define IDI_POISSON2D 1
 
-IDI_POISSON2D ICON DISCARDABLE "../common_icons/smiling_sun.ico"
+IDI_POISSON2D ICON DISCARDABLE "../share/smiling_sun.ico"
 
 #define IDM_MAINMENU        9000
 #define IDM_FILE_EXIT       9010

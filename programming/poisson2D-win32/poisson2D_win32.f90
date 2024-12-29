@@ -2,7 +2,7 @@
 ! Author: Angelo Graziosi
 !
 !   created   : Feb 10, 2014
-!   last edit : Aug 18, 2016
+!   last edit : Dec 29, 2024
 !
 !   Boundary Value Problem for Poisson Equation
 !
@@ -26,18 +26,35 @@
 !
 ! HOW TO BUILD THE APP (MSYS2/UCRT64 shell)
 !
-!   cd win32-fortran.apps/poisson2D.app
+!   cd programming
+!
+!   cd basic_mods
+!
+!   make FFLAGS='[-march=native] -Wall -std=f2018 -fmax-errors=1 -O3' all
+!   mv *.a ../lib/
+!   mv *.mod ../finclude/
+!   make clean
+!   cd ..
+!
+!   cd fortran-win32
+!
+!   make FFLAGS='[-march=native] -Wall -std=f2018 -fmax-errors=1 -O3' all
+!   mv *.a ../lib/
+!   mv *.mod ../finclude/
+!   make clean
+!   cd ..
 !
 !   rm -rf {*.mod,*.res} && \
-!   windres poisson2D.rc -O coff -o poisson2D.res && \
-!   gfortran -std=f2018 -O3 -Wall \
-!     -Wno-unused-dummy-argument -Wno-maybe-uninitialized \
-!     [-static] -mwindows ../../basic-modules/{kind,math}_consts.f90 \
-!     ../{win32,{basic,about,x,xy,radio}_box_m,win32app}.f90 \
-!     poisson2D.f90 poisson2D.res -o poisson2D && \
-!     rm -rf {*.mod,*.res}
+!   windres poisson2D_win32.rc -O coff -o poisson2D_win32.res && \
+!   gfortran [-g3 -fbacktrace -fcheck=all] [-march=native] -Wall \
+!     -Wno-unused-dummy-argument -Wno-maybe-uninitialized -std=f2018 \
+!     [-fmax-errors=1] -O3 -I ../finclude -static -mwindows \
+!     poisson2D_win32.f90 -o poisson2D_win32 poisson2D.res \
+!     -L ../lib -lbasic_mods -lfortran-win32box -lfortran-win32app \
+!       -lfortran-win32 && \
+!   rm -rf {*.mod,*.res}
 !
-!   ./poisson2D
+!   ./poisson2D_win32
 !
 
 ! A new implementation of shade.kumac PAW macro. See
