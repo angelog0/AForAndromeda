@@ -668,6 +668,25 @@ fi
 
 ## ----------------------------------------------------------
 
+cd "${PROGRAMMING_DIR}/poisson2D_solver"
+
+program_name="poisson2D_solver"
+if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
+    ## Just an alternative (almost) is
+    ##
+    ##   echo -n "Building ${program_name} ... " | tr '[:lower:]' '[:upper:]'
+    ##
+    ## because the following does NOT work OB on macOS
+    echo -n "Building ${program_name^^} ... "
+    rm -rf *.mod
+    ${FC} -std=f2018 -O3 -Wall -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods -lfortran-sdl2apps -lfortran-sdl2 ${LIBS}
+    rm -rf *.mod
+    mv ${program_name}${EXE} "${BIN_DIR}"
+    echo "done."
+fi
+
+## ----------------------------------------------------------
+
 cd "${PROGRAMMING_DIR}/poisson2D-win32"
 
 program_name="poisson2D_win32"
