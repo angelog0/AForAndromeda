@@ -110,18 +110,21 @@ if [ ! -f "${ODEMODS_LIB}" ] ; then
     echo
 fi
 
-if [ ! -f "${FORTRANW32_LIB}" ] || [ ! -f "${FORTRANWBOX_LIB}" ] || [ ! -f "${FORTRANWAPP_LIB}" ]; then
+## Build Windows apps only on MINGW64/UCRT64
+if [ "${MINGW64_OS}" != "" ] ; then
+    if [ ! -f "${FORTRANW32_LIB}" ] || [ ! -f "${FORTRANWBOX_LIB}" ] || [ ! -f "${FORTRANWAPP_LIB}" ]; then
 
-    echo "Building ${FORTRANW32_LIB##*/}, ${FORTRANWBOX_LIB##*/} and ${FORTRANWAPP_LIB##*/} ..."
-    echo
+        echo "Building ${FORTRANW32_LIB##*/}, ${FORTRANWBOX_LIB##*/} and ${FORTRANWAPP_LIB##*/} ..."
+        echo
 
-    cd "${FORTRANW32_DIR}"
+        cd "${FORTRANW32_DIR}"
 
-    make FFLAGS='-Wall -std=f2018 -fmax-errors=1 -O3' all
-    mv *.a "${LIB_DIR}"
-    mv *.mod "${INC_DIR}"
-    make clean
-    echo
+        make FFLAGS='-Wall -std=f2018 -fmax-errors=1 -O3' all
+        mv *.a "${LIB_DIR}"
+        mv *.mod "${INC_DIR}"
+        make clean
+        echo
+    fi
 fi
 
 ## ${FORTRANSDL2_DIR##*/} and friends: remove the longest string "*/" from the
@@ -687,22 +690,25 @@ fi
 
 ## ----------------------------------------------------------
 
-cd "${PROGRAMMING_DIR}/poisson2D-win32"
+## Build Windows apps only on MINGW64/UCRT64
+if [ "${MINGW64_OS}" != "" ] ; then
+    cd "${PROGRAMMING_DIR}/poisson2D-win32"
 
-program_name="poisson2D_win32"
-if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
-    ## Just an alternative (almost) is
-    ##
-    ##   echo -n "Building ${program_name} ... " | tr '[:lower:]' '[:upper:]'
-    ##
-    ## because the following does NOT work OB on macOS
-    echo -n "Building ${program_name^^} ... "
-    rm -rf {*.mod,*.res}
-    ${RC} ${program_name}.rc -O coff -o ${program_name}.res
-    ${FC} -std=f2018 -O3 -Wall -Wno-unused-dummy-argument -Wno-maybe-uninitialized -I ../finclude -static -mwindows ${program_name}.f90 -o ${program_name}${EXE} ${program_name}.res -L ../lib -lbasic_mods -lfortran-win32box -lfortran-win32app -lfortran-win32
-    rm -rf {*.mod,*.res}
-    mv ${program_name}${EXE} "${BIN_DIR}"
-    echo "done."
+    program_name="poisson2D_win32"
+    if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
+        ## Just an alternative (almost) is
+        ##
+        ##   echo -n "Building ${program_name} ... " | tr '[:lower:]' '[:upper:]'
+        ##
+        ## because the following does NOT work OB on macOS
+        echo -n "Building ${program_name^^} ... "
+        rm -rf {*.mod,*.res}
+        ${RC} ${program_name}.rc -O coff -o ${program_name}.res
+        ${FC} -std=f2018 -O3 -Wall -Wno-unused-dummy-argument -Wno-maybe-uninitialized -I ../finclude -static -mwindows ${program_name}.f90 -o ${program_name}${EXE} ${program_name}.res -L ../lib -lbasic_mods -lfortran-win32box -lfortran-win32app -lfortran-win32
+        rm -rf {*.mod,*.res}
+        mv ${program_name}${EXE} "${BIN_DIR}"
+        echo "done."
+    fi
 fi
 
 ## ----------------------------------------------------------
@@ -745,6 +751,8 @@ fi
 
 ## ----------------------------------------------------------
 
+## On GNU/Linux the linker 'ld' emits a warning which can be avoided
+## adding '-z noexecstack' to the command line of FC
 cd "${PROGRAMMING_DIR}/three_body_problem"
 
 program_name="three_body_problem"
