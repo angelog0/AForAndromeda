@@ -8,13 +8,13 @@
 ##
 ##   or (on macOS, for example after installing the right bash > 4.0)
 ##
-##     FC=gfortran-mp-12 bash ./build-all.sh
+##     CXX=g++-mp-14 FC=gfortran-mp-14 bash ./build.sh
 ##
 ##   We have removed the '-march=native' flag because it makes
 ##   binaries NOT PORTABLE across the same OS with different
 ##   processors. If you need it, maybe you ca run
 ##
-##     FC='gfortran -march=native' ./build-all.sh
+##     FC='gfortran -march=native' ./build.sh
 ##
 ##   Then to start a program:
 ##
@@ -23,6 +23,7 @@
 ##
 
 : ${FC=gfortran}
+: ${CXX=g++}
 : ${RC=windres}
 
 PROGRAMMING_DIR="$(pwd)"
@@ -89,7 +90,7 @@ if [ ! -f "${BASICMODS_LIB}" ] ; then
 
     cd "${BASICMODS_DIR}"
 
-    make FFLAGS='-Wall -std=f2018 -fmax-errors=1 -O3' all
+    make CXX=${CXX} FC=${FC} FFLAGS='-Wall -std=f2018 -fmax-errors=1 -O3' all
     mv ${BASICMODS_LIB##*/} "${LIB_DIR}"
     mv *.mod "${INC_DIR}"
     make clean
@@ -103,7 +104,7 @@ if [ ! -f "${ODEMODS_LIB}" ] ; then
 
     cd "${ODEMODS_DIR}"
 
-    make FFLAGS='-Wall -std=f2018 -fmax-errors=1 -O3' all
+    make CXX=${CXX} FC=${FC} FFLAGS='-Wall -std=f2018 -fmax-errors=1 -O3' all
     mv ${ODEMODS_LIB##*/} "${LIB_DIR}"
     mv *.mod "${INC_DIR}"
     make clean
@@ -119,7 +120,7 @@ if [ "${MINGW64_OS}" != "" ] ; then
 
         cd "${FORTRANW32_DIR}"
 
-        make FFLAGS='-Wall -std=f2018 -fmax-errors=1 -O3' all
+        make CXX=${CXX} FC=${FC} FFLAGS='-Wall -std=f2018 -fmax-errors=1 -O3' all
         mv *.a "${LIB_DIR}"
         mv *.mod "${INC_DIR}"
         make clean
@@ -148,7 +149,7 @@ if [ ! -f "${FORTRANSDL2_LIB}" ] ; then
 
     cd "${FORTRANSDL2_DIR}"
 
-    make FFLAGS='-Wall -std=f2018 -fmax-errors=1 $(SDL_CFLAGS) -O3' all
+    make CXX=${CXX} FC=${FC} FFLAGS='-Wall -std=f2018 -fmax-errors=1 $(SDL_CFLAGS) -O3' all
     mv ${FORTRANSDL2_LIB##*/} "${LIB_DIR}"
     mv c_util.mod glu.mod sdl2*.mod "${INC_DIR}"
     make clean
@@ -162,7 +163,7 @@ if [ ! -f "${FORTRANSDL2APPS_LIB}" ] ; then
 
     cd "${FORTRANSDL2APPS_DIR}"
 
-    make FFLAGS='-Wall -std=f2018 -fmax-errors=1 -O3' all
+    make CXX=${CXX} FC=${FC} FFLAGS='-Wall -std=f2018 -fmax-errors=1 -O3' all
     mv ${FORTRANSDL2APPS_LIB##*/} "${LIB_DIR}"
     mv *.mod "${INC_DIR}"
     make clean
@@ -190,7 +191,7 @@ if [ ! -f "${FORTRANFPARSER_LIB}" ] || [ ! -f "${FPCPP_LIB}" ]; then
 
     cd "${FORTRANFPARSER_DIR}"
 
-    make FFLAGS='-Wall -std=f2018 -fmax-errors=1 -O3' all
+    make CXX=${CXX} FC=${FC} FFLAGS='-Wall -std=f2018 -fmax-errors=1 -O3' all
     mv *.a "${LIB_DIR}"
     mv *.mod "${INC_DIR}"
     make clean
