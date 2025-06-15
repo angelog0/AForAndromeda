@@ -2,7 +2,7 @@
 ! Author: ANGELO GRAZIOSI
 !
 !   created   : Aug 20, 2024
-!   last edit : Dec 28, 2024
+!   last edit : Jun 16, 2025
 !
 !   Particle motion around Schwarzschild black hole.
 !
@@ -422,7 +422,7 @@ contains
   subroutine paint_screen()
 
     do while (.not. quit())
-       ! Draw pendulum at current time (ISTEP)
+       ! Draw body position at current time (ISTEP)
        call display_position()
 
        if (mod(istep,nsout) == 0) &
@@ -433,7 +433,7 @@ contains
        call update_position()
     end do
 
-    ! Draw pendulum at the last step executed
+    ! Draw body position at the last step executed
     call display_position()
 
   contains
