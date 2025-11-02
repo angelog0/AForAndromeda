@@ -149,9 +149,9 @@ if [ ! -f "${FORTRANSDL2_LIB}" ] ; then
 
     cd "${FORTRANSDL2_DIR}"
 
-    make CXX=${CXX} FC=${FC} FFLAGS='-Wall -std=f2018 -fmax-errors=1 $(SDL_CFLAGS) -O3' all
+    make CXX=${CXX} FC=${FC} LIBGL='-lopengl32' LIBGLU='-lglu32' FFLAGS='-Wall -std=f2018 -fmax-errors=1 `sdl2-config --cflags` -O3' all
     mv ${FORTRANSDL2_LIB##*/} "${LIB_DIR}"
-    mv c_util.mod glu.mod sdl2*.mod "${INC_DIR}"
+    mv glu.mod sdl2*.mod "${INC_DIR}"
     make clean
     echo
 fi
@@ -405,6 +405,25 @@ if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
     echo -n "Building ${program_name^^} ... "
     rm -rf *.mod
     ${FC} -std=f2018 -O3 -Wall -Wno-unused-dummy-argument -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods -lode_mods -lfortran-sdl2apps -lfortran-sdl2 ${LIBS}
+    rm -rf *.mod
+    mv ${program_name}${EXE} "${BIN_DIR}"
+    echo "done."
+fi
+
+## ----------------------------------------------------------
+
+cd "${PROGRAMMING_DIR}/ellipsoid_gravitation"
+
+program_name="ellipsoid_orbits"
+if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
+    ## Just an alternative (almost) is
+    ##
+    ##   echo -n "Building ${program_name} ... " | tr '[:lower:]' '[:upper:]'
+    ##
+    ## because the following does NOT work OB on macOS
+    echo -n "Building ${program_name^^} ... "
+    rm -rf *.mod
+    ${FC} -std=f2018 -O3 -Wall -I ../finclude ellipsoid_gravitation.f90 ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods -lfortran-sdl2apps -lfortran-sdl2 ${LIBS}
     rm -rf *.mod
     mv ${program_name}${EXE} "${BIN_DIR}"
     echo "done."
