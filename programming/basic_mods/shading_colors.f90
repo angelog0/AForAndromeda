@@ -2,26 +2,10 @@
 ! Author: ANGELO GRAZIOSI
 !
 !   created   : Feb 10, 2014
-!   last edit : Jan 05, 2024
+!   last edit : Jan 01, 2026
 !
 !   A new implementation of shade.kumac PAW macro.  See
 !   http://paw.web.cern.ch/paw/allfaqs.html
-!
-!
-! LICENSE
-!
-!     Copyright (c) 2014-2024, ANGELO GRAZIOSI.  ALL RIGHTS RESERVED.
-!
-! ANGELO GRAZIOSI retains all intellectual property and proprietary rights
-! in and to this software, related documentation and any modifications
-! thereto.  Any use, reproduction, disclosure or distribution of this
-! software and related documentation without an express license agreement
-! from ANGELO GRAZIOSI is strictly prohibited.
-!
-!          THIS CODE AND INFORMATION ARE PROVIDED "AS IS" WITHOUT
-!   WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT
-!   NOT LIMITED TO THE IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR
-!   FITNESS FOR A PARTICULAR PURPOSE.
 !
 
 module shading_colors
