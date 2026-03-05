@@ -54,6 +54,9 @@ FORTRANWAPP_LIB="${LIB_DIR}/libfortran-win32app.a"
 ODEMODS_DIR="${PROGRAMMING_DIR}/ode_mods"
 ODEMODS_LIB="${LIB_DIR}/libode_mods.a"
 
+FMZM_DIR="${PROGRAMMING_DIR}/FM_files"
+FMZM_LIB="${LIB_DIR}/libfm.a"
+
 if [ ! -e "${BIN_DIR}" ] ; then
     mkdir -p "${BIN_DIR}"
 fi
@@ -195,6 +198,43 @@ if [ ! -f "${FORTRANFPARSER_LIB}" ] || [ ! -f "${FPCPP_LIB}" ]; then
     mv *.a "${LIB_DIR}"
     mv *.mod "${INC_DIR}"
     make clean
+    echo
+fi
+
+if [ ! -f "${FMZM_LIB}" ] ; then
+
+    echo "Building ${FMZM_LIB##*/} ..."
+    echo
+
+    if [ ! -e "${FMZM_DIR}" ] ; then
+        echo
+        echo -n "Downloading FM_files.zip ... "
+
+        cd "${PROGRAMMING_DIR}"
+
+        wget -q https://dmsmith.lmu.build/FM1.4/FM_files.zip
+        aunpack -q FM_files.zip -X FM.tmp/
+        mv FM.tmp/FM_files .
+        rm -rf FM.tmp FM_files.zip
+
+        echo "done."
+        echo
+    fi
+
+    echo
+    echo -n "Wait a moment ... "
+
+    cd "${FMZM_DIR}"
+
+    ${FC} -O3 -I./ -o fmsave.o -c fmsave.f95
+    ${FC} -O3 -I./ -o fm.o -c fm.f95
+    ${FC} -O3 -I./ -o fmzm90.o -c fmzm90.f95
+    ar rcs libfm.a fmsave.o fmzm90.o fm.o
+    echo "done."
+    echo
+    mv libfm.a "${LIB_DIR}"
+    mv fmzm.mod "${INC_DIR}"
+    make -s clean
     echo
 fi
 
@@ -745,6 +785,25 @@ if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
     echo -n "Building ${program_name^^} ... "
     rm -rf *.mod
     ${FC} -std=f2018 -O3 -Wall -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods -lfortran-sdl2apps -lfortran-sdl2 ${LIBS}
+    rm -rf *.mod
+    mv ${program_name}${EXE} "${BIN_DIR}"
+    echo "done."
+fi
+
+## ----------------------------------------------------------
+
+cd "${PROGRAMMING_DIR}/tfmajorana_mpc"
+
+program_name="tfmajorana_mpc"
+if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
+    ## Just an alternative (almost) is
+    ##
+    ##   echo -n "Building ${program_name} ... " | tr '[:lower:]' '[:upper:]'
+    ##
+    ## because the following does NOT work OB on macOS
+    echo -n "Building ${program_name^^} ... "
+    rm -rf *.mod
+    ${FC} -O3 -static -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lfm
     rm -rf *.mod
     mv ${program_name}${EXE} "${BIN_DIR}"
     echo "done."
