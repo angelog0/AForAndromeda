@@ -796,6 +796,13 @@ cd "${PROGRAMMING_DIR}/tfmajorana_mpc"
 
 program_name="tfmajorana_mpc"
 if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
+    DARWIN_OS=`uname -s | grep Darwin`
+
+    STATIC_OPT=""
+    if [ "${DARWIN_OS}" != "Darwin" ] ; then
+        STATIC_OPT="-static"
+    fi
+
     ## Just an alternative (almost) is
     ##
     ##   echo -n "Building ${program_name} ... " | tr '[:lower:]' '[:upper:]'
@@ -803,7 +810,7 @@ if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
     ## because the following does NOT work OB on macOS
     echo -n "Building ${program_name^^} ... "
     rm -rf *.mod
-    ${FC} -O3 -static -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lfm
+    ${FC} -O3 ${STATIC_OPT} -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lfm
     rm -rf *.mod
     mv ${program_name}${EXE} "${BIN_DIR}"
     echo "done."
