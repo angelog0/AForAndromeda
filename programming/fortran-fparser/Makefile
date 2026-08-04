@@ -7,7 +7,7 @@ CXXFLAGS    = -DFP_SUPPORT_FLOAT_TYPE -DFP_SUPPORT_LONG_DOUBLE_TYPE \
               -DFP_SUPPORT_COMPLEX_FLOAT_TYPE \
               -DFP_SUPPORT_COMPLEX_LONG_DOUBLE_TYPE \
               -DFP_USE_THREAD_SAFE_EVAL -DFP_USE_THREAD_SAFE_EVAL_WITH_ALLOCA \
-	      -Wno-deprecated-enum-enum-conversion
+              -Wno-deprecated-enum-enum-conversion
 
 FC          = gfortran
 FFLAGS      = -march=native -Wall -fmax-errors=1 # -O2
