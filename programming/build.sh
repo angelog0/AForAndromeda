@@ -6,9 +6,11 @@
 ##
 ##     ./build.sh
 ##
-##   or (on macOS, for example after installing the right bash > 4.0)
+##   or (on macOS+MacPorts, for example after installing the right bash > 4.0)
 ##
-##     CXX=g++-mp-14 FC=gfortran-mp-14 bash ./build.sh
+##     CXX=g++-mp-15 FC=gfortran-mp-15 bash ./build.sh
+##
+##   On macOS+Homebrew+zsh, you should use build.zsh script.
 ##
 ##   We have removed the '-march=native' flag because it makes
 ##   binaries NOT PORTABLE across the same OS with different
@@ -72,11 +74,21 @@ fi
 ## MSYS2/UCRT64 _is_ MINGW64!!!
 MINGW64_OS=`uname -s | grep MINGW64`
 
+DARWIN_OS=`uname -s | grep Darwin`
+
 if [ "${MINGW64_OS}" != "" ] ; then
+    LIBGL=-lopengl32
+    LIBGLU=-lglu32
+
     ## MINGW64 static build
     LIBS="-static -lmingw32 -lSDL2main -lSDL2 -lws2_32 -ldinput8 -ldxguid -ldxerr8 -luser32 -lgdi32 -lwinmm -limm32 -lole32 -loleaut32 -lshell32 -lversion -luuid -lcomdlg32 -lhid -lsetupapi"
     EXE=.exe
 else
+    if [[ -n "${DARWIN_OS}" ]]; then
+        LIBGL="-framework OpenGL"
+        LIBGLU=
+    fi
+
     ## GNU/Linux / macOS build
     LIBS=`sdl2-config --libs`
     EXE=.out
@@ -93,7 +105,7 @@ if [ ! -f "${BASICMODS_LIB}" ] ; then
 
     cd "${BASICMODS_DIR}"
 
-    make CXX=${CXX} FC=${FC} FFLAGS='-Wall -std=f2018 -fmax-errors=1 -O3' all
+    make CXX=${CXX} FC=${FC} FFLAGS='-Wall -std=f2023 -fmax-errors=1 -O3' all
     mv ${BASICMODS_LIB##*/} "${LIB_DIR}"
     mv *.mod "${INC_DIR}"
     make clean
@@ -107,7 +119,7 @@ if [ ! -f "${ODEMODS_LIB}" ] ; then
 
     cd "${ODEMODS_DIR}"
 
-    make CXX=${CXX} FC=${FC} FFLAGS='-Wall -std=f2018 -fmax-errors=1 -O3' all
+    make CXX=${CXX} FC=${FC} FFLAGS='-Wall -std=f2023 -fmax-errors=1 -O3' all
     mv ${ODEMODS_LIB##*/} "${LIB_DIR}"
     mv *.mod "${INC_DIR}"
     make clean
@@ -123,7 +135,7 @@ if [ "${MINGW64_OS}" != "" ] ; then
 
         cd "${FORTRANW32_DIR}"
 
-        make CXX=${CXX} FC=${FC} FFLAGS='-Wall -std=f2018 -fmax-errors=1 -O3' all
+        make CXX=${CXX} FC=${FC} FFLAGS='-Wall -std=f2023 -fmax-errors=1 -O3' all
         mv *.a "${LIB_DIR}"
         mv *.mod "${INC_DIR}"
         make clean
@@ -152,7 +164,8 @@ if [ ! -f "${FORTRANSDL2_LIB}" ] ; then
 
     cd "${FORTRANSDL2_DIR}"
 
-    make CXX=${CXX} FC=${FC} LIBGL='-lopengl32' LIBGLU='-lglu32' FFLAGS='-Wall -std=f2018 -fmax-errors=1 `sdl2-config --cflags` -O3' all
+    make CXX=${CXX} FC=${FC} LIBGL=${LIBGL} LIBGLU=${LIBGLU} FFLAGS='-Wall -Wno-character-truncation -Wno-unused-function -std=f2023 -fmax-errors=1 `sdl2-config --cflags` -O3' all
+
     mv ${FORTRANSDL2_LIB##*/} "${LIB_DIR}"
     mv glu.mod sdl2*.mod "${INC_DIR}"
     make clean
@@ -166,7 +179,7 @@ if [ ! -f "${FORTRANSDL2APPS_LIB}" ] ; then
 
     cd "${FORTRANSDL2APPS_DIR}"
 
-    make CXX=${CXX} FC=${FC} FFLAGS='-Wall -std=f2018 -fmax-errors=1 -O3' all
+    make CXX=${CXX} FC=${FC} FFLAGS='-Wall -std=f2023 -fmax-errors=1 -O3' all
     mv ${FORTRANSDL2APPS_LIB##*/} "${LIB_DIR}"
     mv *.mod "${INC_DIR}"
     make clean
@@ -194,7 +207,7 @@ if [ ! -f "${FORTRANFPARSER_LIB}" ] || [ ! -f "${FPCPP_LIB}" ]; then
 
     cd "${FORTRANFPARSER_DIR}"
 
-    make CXX=${CXX} FC=${FC} FFLAGS='-Wall -std=f2018 -fmax-errors=1 -O3' all
+    make CXX=${CXX} FC=${FC} FFLAGS='-Wall -std=f2023 -fmax-errors=1 -O3' all
     mv *.a "${LIB_DIR}"
     mv *.mod "${INC_DIR}"
     make clean
@@ -253,7 +266,7 @@ if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
     ## because the following does NOT work OB on macOS
     echo -n "Building ${program_name^^} ... "
     rm -rf *.mod
-    ${FC} -std=f2018 -O3 -Wall -Wno-unused-dummy-argument -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods -lode_mods -lfortran-sdl2apps -lfortran-sdl2 ${LIBS}
+    ${FC} -std=f2023 -O3 -Wall -Wno-unused-dummy-argument -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods -lode_mods -lfortran-sdl2apps -lfortran-sdl2 ${LIBS}
     rm -rf *.mod
     mv ${program_name}${EXE} "${BIN_DIR}"
     echo "done."
@@ -272,7 +285,7 @@ if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
     ## because the following does NOT work OB on macOS
     echo -n "Building ${program_name^^} ... "
     rm -rf *.mod
-    ${FC} -std=f2018 -O3 -Wall -Wno-unused-dummy-argument -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods -lfortran-sdl2apps -lfortran-sdl2 ${LIBS}
+    ${FC} -std=f2023 -O3 -Wall -Wno-unused-dummy-argument -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods -lfortran-sdl2apps -lfortran-sdl2 ${LIBS}
     rm -rf *.mod
     mv ${program_name}${EXE} "${BIN_DIR}"
     echo "done."
@@ -292,7 +305,7 @@ if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
     echo -n "Building ${program_name^^} ... "
     rm -rf *.mod
     ## We do not need _all this_ but we use it to get a static build
-    ${FC} -std=f2018 -O3 -Wall ${program_name}.f90 -o ${program_name}${EXE} ${LIBS}
+    ${FC} -std=f2023 -O3 -Wall ${program_name}.f90 -o ${program_name}${EXE} ${LIBS}
     rm -rf *.mod
     mv ${program_name}${EXE} "${BIN_DIR}"
     echo "done."
@@ -308,7 +321,7 @@ if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
     echo -n "Building ${program_name^^} ... "
     rm -rf *.mod
     ## We do not need _all this_ but we use it to get a static build
-    ${FC} -std=f2018 -O3 -Wall -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods ${LIBS}
+    ${FC} -std=f2023 -O3 -Wall -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods ${LIBS}
     rm -rf *.mod
     mv ${program_name}${EXE} "${BIN_DIR}"
     echo "done."
@@ -323,7 +336,7 @@ if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
     ## because the following does NOT work OB on macOS
     echo -n "Building ${program_name^^} ... "
     rm -rf *.mod
-    ${FC} -std=f2018 -O3 -Wall -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods -lfortran-sdl2apps -lfortran-sdl2 ${LIBS}
+    ${FC} -std=f2023 -O3 -Wall -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods -lfortran-sdl2apps -lfortran-sdl2 ${LIBS}
     rm -rf *.mod
     mv ${program_name}${EXE} "${BIN_DIR}"
     echo "done."
@@ -342,7 +355,7 @@ if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
     ## because the following does NOT work OB on macOS
     echo -n "Building ${program_name^^} ... "
     rm -rf *.mod
-    ${FC} -std=f2018 -O3 -Wall -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods -lfortran-sdl2apps -lfortran-sdl2 ${LIBS}
+    ${FC} -std=f2023 -O3 -Wall -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods -lfortran-sdl2apps -lfortran-sdl2 ${LIBS}
     rm -rf *.mod
     mv ${program_name}${EXE} "${BIN_DIR}"
     echo "done."
@@ -361,7 +374,7 @@ if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
     ## because the following does NOT work OB on macOS
     echo -n "Building ${program_name^^} ... "
     rm -rf *.mod
-    ${FC} -std=f2018 -O3 -Wall -Wno-unused-dummy-argument -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods -lode_mods ${LIBS}
+    ${FC} -std=f2023 -O3 -Wall -Wno-unused-dummy-argument -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods -lode_mods ${LIBS}
     rm -rf *.mod
     mv ${program_name}${EXE} "${BIN_DIR}"
     echo "done."
@@ -376,7 +389,7 @@ if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
     ## because the following does NOT work OB on macOS
     echo -n "Building ${program_name^^} ... "
     rm -rf *.mod
-    ${FC} -std=f2018 -O3 -Wall -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods ${LIBS}
+    ${FC} -std=f2023 -O3 -Wall -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods ${LIBS}
     rm -rf *.mod
     mv ${program_name}${EXE} "${BIN_DIR}"
     echo "done."
@@ -391,7 +404,7 @@ if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
     ## because the following does NOT work OB on macOS
     echo -n "Building ${program_name^^} ... "
     rm -rf *.mod
-    ${FC} -std=f2018 -O3 -Wall -Wno-unused-dummy-argument -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods -lode_mods ${LIBS}
+    ${FC} -std=f2023 -O3 -Wall -Wno-unused-dummy-argument -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods -lode_mods ${LIBS}
     rm -rf *.mod
     mv ${program_name}${EXE} "${BIN_DIR}"
     echo "done."
@@ -410,7 +423,7 @@ if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
     ## because the following does NOT work OB on macOS
     echo -n "Building ${program_name^^} ... "
     rm -rf *.mod
-    ${FC} -std=f2018 -O3 -Wall -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lfortran-fparser -lbasic_mods -lfortran-sdl2apps -lfortran-sdl2 -lfpc++ -lstdc++ ${LIBS}
+    ${FC} -std=f2023 -O3 -Wall -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lfortran-fparser -lbasic_mods -lfortran-sdl2apps -lfortran-sdl2 -lfpc++ -lstdc++ ${LIBS}
     rm -rf *.mod
     mv ${program_name}${EXE} "${BIN_DIR}"
     echo "done."
@@ -425,7 +438,7 @@ if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
     ## because the following does NOT work OB on macOS
     echo -n "Building ${program_name^^} ... "
     rm -rf *.mod
-    ${FC} -std=f2018 -O3 -Wall -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lfortran-fparser -lbasic_mods -lfortran-sdl2apps -lfortran-sdl2 -lfpc++ -lstdc++ ${LIBS}
+    ${FC} -std=f2023 -O3 -Wall -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lfortran-fparser -lbasic_mods -lfortran-sdl2apps -lfortran-sdl2 -lfpc++ -lstdc++ ${LIBS}
     rm -rf *.mod
     mv ${program_name}${EXE} "${BIN_DIR}"
     echo "done."
@@ -444,7 +457,7 @@ if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
     ## because the following does NOT work OB on macOS
     echo -n "Building ${program_name^^} ... "
     rm -rf *.mod
-    ${FC} -std=f2018 -O3 -Wall -Wno-unused-dummy-argument -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods -lode_mods -lfortran-sdl2apps -lfortran-sdl2 ${LIBS}
+    ${FC} -std=f2023 -O3 -Wall -Wno-unused-dummy-argument -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods -lode_mods -lfortran-sdl2apps -lfortran-sdl2 ${LIBS}
     rm -rf *.mod
     mv ${program_name}${EXE} "${BIN_DIR}"
     echo "done."
@@ -463,7 +476,7 @@ if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
     ## because the following does NOT work OB on macOS
     echo -n "Building ${program_name^^} ... "
     rm -rf *.mod
-    ${FC} -std=f2018 -O3 -Wall -I ../finclude ellipsoid_gravitation.f90 ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods -lfortran-sdl2apps -lfortran-sdl2 ${LIBS}
+    ${FC} -std=f2023 -O3 -Wall -I ../finclude ellipsoid_gravitation.f90 ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods -lfortran-sdl2apps -lfortran-sdl2 ${LIBS}
     rm -rf *.mod
     mv ${program_name}${EXE} "${BIN_DIR}"
     echo "done."
@@ -482,7 +495,7 @@ if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
     ## because the following does NOT work OB on macOS
     echo -n "Building ${program_name^^} ... "
     rm -rf *.mod
-    ${FC} -std=f2018 -O3 -Wall -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lfortran-fparser -lbasic_mods -lfortran-sdl2apps -lfortran-sdl2 -lfpc++ -lstdc++ ${LIBS}
+    ${FC} -std=f2023 -O3 -Wall -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lfortran-fparser -lbasic_mods -lfortran-sdl2apps -lfortran-sdl2 -lfpc++ -lstdc++ ${LIBS}
     rm -rf *.mod
     mv ${program_name}${EXE} "${BIN_DIR}"
     echo "done."
@@ -501,7 +514,7 @@ if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
     ## because the following does NOT work OB on macOS
     echo -n "Building ${program_name^^} ... "
     rm -rf *.mod
-    ${FC} -std=f2018 -O3 -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods -lfortran-sdl2apps -lfortran-sdl2 ${LIBS}
+    ${FC} -std=f2023 -O3 -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods -lfortran-sdl2apps -lfortran-sdl2 ${LIBS}
     rm -rf *.mod
     mv ${program_name}${EXE} "${BIN_DIR}"
     echo "done."
@@ -520,7 +533,7 @@ if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
     ## because the following does NOT work OB on macOS
     echo -n "Building ${program_name^^} ... "
     rm -rf *.mod
-    ${FC} -std=f2018 -O3 -Wall -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lfortran-fparser -lbasic_mods -lfortran-sdl2apps -lfortran-sdl2 -lfpc++ -lstdc++ ${LIBS}
+    ${FC} -std=f2023 -O3 -Wall -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lfortran-fparser -lbasic_mods -lfortran-sdl2apps -lfortran-sdl2 -lfpc++ -lstdc++ ${LIBS}
     rm -rf *.mod
     mv ${program_name}${EXE} "${BIN_DIR}"
     echo "done."
@@ -539,7 +552,7 @@ if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
     ## because the following does NOT work OB on macOS
     echo -n "Building ${program_name^^} ... "
     rm -rf *.mod
-    ${FC} -std=f2018 -O3 -Wall -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods -lfortran-sdl2apps -lfortran-sdl2 ${LIBS}
+    ${FC} -std=f2023 -O3 -Wall -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods -lfortran-sdl2apps -lfortran-sdl2 ${LIBS}
     rm -rf *.mod
     mv ${program_name}${EXE} "${BIN_DIR}"
     echo "done."
@@ -554,7 +567,7 @@ if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
     ## because the following does NOT work OB on macOS
     echo -n "Building ${program_name^^} ... "
     rm -rf *.mod
-    ${FC} -std=f2018 -O3 -Wall -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods -lfortran-sdl2apps -lfortran-sdl2 ${LIBS}
+    ${FC} -std=f2023 -O3 -Wall -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods -lfortran-sdl2apps -lfortran-sdl2 ${LIBS}
     rm -rf *.mod
     mv ${program_name}${EXE} "${BIN_DIR}"
     echo "done."
@@ -569,7 +582,7 @@ if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
     ## because the following does NOT work OB on macOS
     echo -n "Building ${program_name^^} ... "
     rm -rf *.mod
-    ${FC} -std=f2018 -O3 -Wall -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lfortran-sdl2apps -lfortran-sdl2 ${LIBS}
+    ${FC} -std=f2023 -O3 -Wall -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lfortran-sdl2apps -lfortran-sdl2 ${LIBS}
     rm -rf *.mod
     mv ${program_name}${EXE} "${BIN_DIR}"
     echo "done."
@@ -584,7 +597,7 @@ if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
     ## because the following does NOT work OB on macOS
     echo -n "Building ${program_name^^} ... "
     rm -rf *.mod
-    ${FC} -std=f2018 -O3 -Wall -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods -lfortran-sdl2apps -lfortran-sdl2 ${LIBS}
+    ${FC} -std=f2023 -O3 -Wall -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods -lfortran-sdl2apps -lfortran-sdl2 ${LIBS}
     rm -rf *.mod
     mv ${program_name}${EXE} "${BIN_DIR}"
     echo "done."
@@ -599,7 +612,7 @@ if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
     ## because the following does NOT work OB on macOS
     echo -n "Building ${program_name^^} ... "
     rm -rf *.mod
-    ${FC} -std=f2018 -O3 -Wall -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods -lfortran-sdl2apps -lfortran-sdl2 ${LIBS}
+    ${FC} -std=f2023 -O3 -Wall -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods -lfortran-sdl2apps -lfortran-sdl2 ${LIBS}
     rm -rf *.mod
     mv ${program_name}${EXE} "${BIN_DIR}"
     echo "done."
@@ -618,7 +631,7 @@ if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
     ## because the following does NOT work OB on macOS
     echo -n "Building ${program_name^^} ... "
     rm -rf *.mod
-    ${FC} -std=f2018 -O3 -Wall -Wno-unused-dummy-argument -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods -lode_mods -lfortran-sdl2apps -lfortran-sdl2 ${LIBS}
+    ${FC} -std=f2023 -O3 -Wall -Wno-unused-dummy-argument -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods -lode_mods -lfortran-sdl2apps -lfortran-sdl2 ${LIBS}
     rm -rf *.mod
     mv ${program_name}${EXE} "${BIN_DIR}"
     echo "done."
@@ -637,7 +650,7 @@ if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
     ## because the following does NOT work OB on macOS
     echo -n "Building ${program_name^^} ... "
     rm -rf *.mod
-    ${FC} -std=f2018 -O3 -Wall -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods -lfortran-sdl2apps -lfortran-sdl2 ${LIBS}
+    ${FC} -std=f2023 -O3 -Wall -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods -lfortran-sdl2apps -lfortran-sdl2 ${LIBS}
     rm -rf *.mod
     mv ${program_name}${EXE} "${BIN_DIR}"
     echo "done."
@@ -656,7 +669,7 @@ if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
     ## because the following does NOT work OB on macOS
     echo -n "Building ${program_name^^} ... "
     rm -rf *.mod
-    ${FC} -std=f2018 -O3 -Wall -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods -lfortran-sdl2apps -lfortran-sdl2 ${LIBS}
+    ${FC} -std=f2023 -O3 -Wall -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods -lfortran-sdl2apps -lfortran-sdl2 ${LIBS}
     rm -rf *.mod
     mv ${program_name}${EXE} "${BIN_DIR}"
     echo "done."
@@ -671,7 +684,7 @@ if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
     ## because the following does NOT work OB on macOS
     echo -n "Building ${program_name^^} ... "
     rm -rf *.mod
-    ${FC} -std=f2018 -O3 -Wall -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods -lfortran-sdl2apps -lfortran-sdl2 ${LIBS}
+    ${FC} -std=f2023 -O3 -Wall -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods -lfortran-sdl2apps -lfortran-sdl2 ${LIBS}
     rm -rf *.mod
     mv ${program_name}${EXE} "${BIN_DIR}"
     echo "done."
@@ -691,7 +704,7 @@ if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
     echo -n "Building ${program_name^^} ... "
     rm -rf *.mod
     ## We do not need _all this_ but we use it to get a static build
-    ${FC} -std=f2018 -O3 -Wall ${program_name}.f90 -o ${program_name}${EXE} ${LIBS}
+    ${FC} -std=f2023 -O3 -Wall ${program_name}.f90 -o ${program_name}${EXE} ${LIBS}
     rm -rf *.mod
     mv ${program_name}${EXE} "${BIN_DIR}"
     echo "done."
@@ -707,7 +720,7 @@ if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
     echo -n "Building ${program_name^^} ... "
     rm -rf *.mod
     ## We do not need _all this_ but we use it to get a static build
-    ${FC} -std=f2018 -O3 -Wall ${program_name}.f90 -o ${program_name}${EXE} ${LIBS}
+    ${FC} -std=f2023 -O3 -Wall ${program_name}.f90 -o ${program_name}${EXE} ${LIBS}
     rm -rf *.mod
     mv ${program_name}${EXE} "${BIN_DIR}"
     echo "done."
@@ -723,7 +736,7 @@ if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
     echo -n "Building ${program_name^^} ... "
     rm -rf *.mod
     ## We do not need _all this_ but we use it to get a static build
-    ${FC} -std=f2018 -O3 -Wall -Wno-unused-function ${program_name}.f90 -o ${program_name}${EXE} ${LIBS}
+    ${FC} -std=f2023 -O3 -Wall -Wno-unused-function ${program_name}.f90 -o ${program_name}${EXE} ${LIBS}
     rm -rf *.mod
     mv ${program_name}${EXE} "${BIN_DIR}"
     echo "done."
@@ -742,7 +755,7 @@ if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
     ## because the following does NOT work OB on macOS
     echo -n "Building ${program_name^^} ... "
     rm -rf *.mod
-    ${FC} -std=f2018 -O3 -Wall -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods -lfortran-sdl2apps -lfortran-sdl2 ${LIBS}
+    ${FC} -std=f2023 -O3 -Wall -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods -lfortran-sdl2apps -lfortran-sdl2 ${LIBS}
     rm -rf *.mod
     mv ${program_name}${EXE} "${BIN_DIR}"
     echo "done."
@@ -764,7 +777,7 @@ if [ "${MINGW64_OS}" != "" ] ; then
         echo -n "Building ${program_name^^} ... "
         rm -rf {*.mod,*.res}
         ${RC} ${program_name}.rc -O coff -o ${program_name}.res
-        ${FC} -std=f2018 -O3 -Wall -Wno-unused-dummy-argument -Wno-maybe-uninitialized -I ../finclude -static -mwindows ${program_name}.f90 -o ${program_name}${EXE} ${program_name}.res -L ../lib -lbasic_mods -lfortran-win32box -lfortran-win32app -lfortran-win32
+        ${FC} -std=f2023 -O3 -Wall -Wno-unused-dummy-argument -Wno-maybe-uninitialized -I ../finclude -static -mwindows ${program_name}.f90 -o ${program_name}${EXE} ${program_name}.res -L ../lib -lbasic_mods -lfortran-win32box -lfortran-win32app -lfortran-win32
         rm -rf {*.mod,*.res}
         mv ${program_name}${EXE} "${BIN_DIR}"
         echo "done."
@@ -784,7 +797,7 @@ if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
     ## because the following does NOT work OB on macOS
     echo -n "Building ${program_name^^} ... "
     rm -rf *.mod
-    ${FC} -std=f2018 -O3 -Wall -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods -lfortran-sdl2apps -lfortran-sdl2 ${LIBS}
+    ${FC} -std=f2023 -O3 -Wall -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods -lfortran-sdl2apps -lfortran-sdl2 ${LIBS}
     rm -rf *.mod
     mv ${program_name}${EXE} "${BIN_DIR}"
     echo "done."
@@ -829,7 +842,7 @@ if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
     ## because the following does NOT work OB on macOS
     echo -n "Building ${program_name^^} ... "
     rm -rf *.mod
-    ${FC} -std=f2018 -O3 -Wall -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods -lode_mods ${LIBS}
+    ${FC} -std=f2023 -O3 -Wall -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods -lode_mods ${LIBS}
     rm -rf *.mod
     mv ${program_name}${EXE} "${BIN_DIR}"
     echo "done."
@@ -850,7 +863,7 @@ if [ ! -f "${BIN_DIR}/${program_name}${EXE}" ] ; then
     ## because the following does NOT work OB on macOS
     echo -n "Building ${program_name^^} ... "
     rm -rf *.mod
-    ${FC} -std=f2018 -O3 -Wall -Wno-unused-dummy-argument -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods -lode_mods -lfortran-sdl2apps -lfortran-sdl2 ${LIBS}
+    ${FC} -std=f2023 -O3 -Wall -Wno-unused-dummy-argument -I ../finclude ${program_name}.f90 -o ${program_name}${EXE} -L ../lib -lbasic_mods -lode_mods -lfortran-sdl2apps -lfortran-sdl2 ${LIBS}
     rm -rf *.mod
     mv ${program_name}${EXE} "${BIN_DIR}"
     echo "done."
