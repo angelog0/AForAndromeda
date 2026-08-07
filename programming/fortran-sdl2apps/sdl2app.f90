@@ -2,9 +2,25 @@
 ! Author: ANGELO GRAZIOSI
 !
 !   created   : Sep 08, 2018
-!   last edit : Jan 01, 2026
+!   last edit : Aug 24, 2024
 !
 !   Module to create SDL2 Fortran applications in DC or WC
+!
+!
+! LICENSE
+!
+!     Copyright (c) 2018-2024, ANGELO GRAZIOSI.  ALL RIGHTS RESERVED.
+!
+! ANGELO GRAZIOSI retains all intellectual property and proprietary rights
+! in and to this software, related documentation and any modifications
+! thereto.  Any use, reproduction, disclosure or distribution of this
+! software and related documentation without an express license agreement
+! from ANGELO GRAZIOSI is strictly prohibited.
+!
+!          THIS CODE AND INFORMATION ARE PROVIDED "AS IS" WITHOUT
+!   WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT
+!   NOT LIMITED TO THE IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR
+!   FITNESS FOR A PARTICULAR PURPOSE.
 !
 
 module sdl2app
@@ -23,7 +39,7 @@ module sdl2app
        sdl_create_renderer, sdl_create_window, &
        sdl_destroy_renderer, sdl_destroy_window, &
        sdl_get_error, sdl_get_mouse_state, &
-       sdl_init, sdl_poll_event, sdl_quit, &
+       sdl_init, sdl_poll_event, sdl_pump_events, sdl_quit, &
        sdl_render_clear, sdl_render_draw_line, sdl_render_draw_lines, &
        sdl_render_draw_point, sdl_render_draw_points, sdl_render_draw_rect, &
        sdl_render_draw_rects, sdl_render_fill_rect, sdl_render_fill_rects, &
@@ -397,6 +413,7 @@ contains
     ! Quit gracefully.
     call sdl_destroy_renderer(renderer)
     call sdl_destroy_window(window)
+    call sdl_pump_events()
     call sdl_quit()
 
     graphics_on = .false.
