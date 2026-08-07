@@ -413,7 +413,11 @@ contains
     ! Quit gracefully.
     call sdl_destroy_renderer(renderer)
     call sdl_destroy_window(window)
+
+    ! Just a workaround for macOS+Homebrew
+    ! See: https://github.com/libsdl-org/SDL/issues/16119#issuecomment-5209399829
     call sdl_pump_events()
+
     call sdl_quit()
 
     graphics_on = .false.
