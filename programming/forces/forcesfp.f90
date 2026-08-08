@@ -2,7 +2,7 @@
 ! Author: ANGELO GRAZIOSI
 !
 !   created   : Apr 20, 2024
-!   last edit : Dec 27, 2024
+!   last edit : Aug 08, 2026
 !
 !   Particle trajectories.
 !
@@ -321,6 +321,8 @@ contains
 
   subroutine draw_logo()
     integer, save :: icolor = 0
+
+    call clear_screen()
 
     call set_color(LRED)
     call draw_ellipse(screen_width/2,screen_height/2,250,100)

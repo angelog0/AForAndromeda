@@ -2,7 +2,7 @@
 ! Author: ANGELO GRAZIOSI
 !
 !   created   : Jun 26, 2023
-!   last edit : Dec 28, 2024 (was star_walk_2d)
+!   last edit : Aug 08, 2026 (was star_walk_2d)
 !
 !   Star Walk of NSTARS
 !
@@ -265,6 +265,8 @@ contains
 
   subroutine draw_logo()
     integer, save :: icolor = 0
+
+    call clear_screen()
 
     call set_color(LRED)
     call draw_ellipse(screen_width/2,screen_height/2,250,100)

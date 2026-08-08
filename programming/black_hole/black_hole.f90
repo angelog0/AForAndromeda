@@ -2,7 +2,7 @@
 ! Author: ANGELO GRAZIOSI
 !
 !   created   : Aug 20, 2024
-!   last edit : Jun 16, 2025
+!   last edit : Aug 08, 2026
 !
 !   Particle motion around Schwarzschild black hole.
 !
@@ -402,6 +402,8 @@ contains
 
   subroutine draw_logo()
     integer, save :: icolor = 0
+
+    call clear_screen()
 
     call set_color(LRED)
     call draw_ellipse(screen_width/2,screen_height/2,250,100)

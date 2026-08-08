@@ -2,7 +2,7 @@
 ! Author: ANGELO GRAZIOSI
 !
 !   created   : Sep 05, 2025
-!   last edit : Sep 28, 2025
+!   last edit : Aug 08, 2026
 !
 !   Particle motion around a static ellipsoid of given density, f(x,y,z).
 !
@@ -475,6 +475,8 @@ contains
 
   subroutine draw_logo()
     integer, save :: icolor = 0
+
+    call clear_screen()
 
     call set_color(LRED)
     call draw_ellipse(screen_width/2,screen_height/2,250,100)
