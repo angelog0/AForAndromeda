@@ -10,6 +10,10 @@
 ##
 ##     CXX=g++-mp-15 FC=gfortran-mp-15 bash ./build.sh
 ##
+##   Maybe you need this on GNU/Linux Mint to avoid a 'ld' warning:
+##
+##     FC="gfortran -z noexecstack" ./build.sh
+##
 ##   On macOS+Homebrew+zsh, you should use build.zsh script.
 ##
 ##   We have removed the '-march=native' flag because it makes
