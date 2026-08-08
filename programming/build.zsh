@@ -18,6 +18,10 @@ setopt +o nomatch
 ##
 ##     FC='gfortran -march=native' ./build.zsh
 ##
+##   Maybe you need this on GNU/Linux Mint to avoid a 'ld' warning:
+##
+##     FC="gfortran -z noexecstack" ./build.zsh
+##
 ##   On macOS+Homebrew+zsh:
 ##
 ##     CXX=g++-16 CC=gcc-16 ./build.zsh
