@@ -14,6 +14,11 @@
 ##
 ##     FC="gfortran -z noexecstack" ./build.sh
 ##
+##   If the compiler does not support f2023 standard, you can change
+##   the standard with:
+##
+##     sed -i.bkp 's/f2023/f2018/' build.sh
+##
 ##   On macOS+Homebrew+zsh, you should use build.zsh script.
 ##
 ##   We have removed the '-march=native' flag because it makes
