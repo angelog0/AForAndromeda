@@ -2,10 +2,11 @@
 ! Author: ANGELO GRAZIOSI
 !
 !   created   : Feb 10, 2014
-!   last edit : Jan 01, 2026
+!   last edit : Aug 08, 2026
 !
 !   A new implementation of shade.kumac PAW macro.  See
 !   http://paw.web.cern.ch/paw/allfaqs.html
+!
 !
 
 module shading_colors
@@ -62,7 +63,7 @@ module shading_colors
   type(color_rgb_t) :: cr_colors(0:MAX_COLOUR_INDEX)
 
   integer :: npt, idx(NMXPT)
-  integer :: r(NMXPT), g(NMXPT), b(NMXPT)
+  real :: r(NMXPT), g(NMXPT), b(NMXPT)
 
   public :: color_rgb_t
   public :: RGBA, shading_setup, get_shading_color
@@ -88,8 +89,55 @@ contains
     end if
   end function RGBA
 
+  subroutine iscr(i,rr,gg,bb)
+    integer, intent(in) :: i
+    real, intent(in) :: rr, gg, bb
+
+    integer, parameter :: MAX_ICOLOR = 255
+
+    integer :: ir = 0, ig = 0, ib = 0
+
+    ir = nint(MAX_ICOLOR*rr)
+    ig = nint(MAX_ICOLOR*gg)
+    ib = nint(MAX_ICOLOR*bb)
+
+    cr_colors(i) = color_rgb_t(ir,ig,ib)
+  end subroutine iscr
+
+  ! shade.f
+  subroutine shade()
+    integer :: i, ii, i1, i2, j, n
+    real :: rs, gs, bs, r1, g1, b1, r2, g2, b2, scale
+
+    if (npt < 2) stop ': At least two colours are needed. (SHADE)'
+
+    do i = 2, npt
+       j  = i-1
+       i1 = idx(j)
+       i2 = idx(i)
+       r1 = r(j)
+       g1 = g(j)
+       b1 = b(j)
+       r2 = r(i)
+       g2 = g(i)
+       b2 = b(i)
+       n  = i2-i1+1
+       do ii = i1, i2
+          scale = float(ii-i1)/(n-1)
+
+          rs = (r2 - r1)*scale + r1
+          gs = (g2 - g1)*scale + g1
+          bs = (b2 - b1)*scale + b1
+
+          call iscr(ii,rs,gs,bs)
+       enddo
+    enddo
+  end subroutine shade
+
+  ! setshd.f
   subroutine set_shade(idxi,ri,gi,bi)
-    integer, intent(in) :: idxi, ri, gi, bi
+    integer, intent(in) :: idxi
+    real, intent(in) :: ri, gi, bi
 
     if (idxi < 0) then
        npt = 0
@@ -106,48 +154,20 @@ contains
     b(npt)   = bi
   end subroutine set_shade
 
-  subroutine shade()
-    integer :: i, ii, i1, i2, j, n, rs, gs, bs, r1, g1, b1, r2, g2, b2
-    real :: scale
-
-    if (npt < 2) stop ': At least two colours are needed. (SHADE)'
-
-    do i = 2, npt
-       j  = i-1
-       i1 = idx(j)
-       i2 = idx(i)
-       r1 = r(j)
-       g1 = g(j)
-       b1 = b(j)
-       r2 = r(i)
-       g2 = g(i)
-       b2 = b(i)
-       n  = i2-i1+1
-       do ii = i1, i2
-          scale = (ii-i1)/(n-1.0)
-
-          rs = int((r2 - r1)*scale + r1)
-          gs = int((g2 - g1)*scale + g1)
-          bs = int((b2 - b1)*scale + b1)
-
-          cr_colors(ii) = color_rgb_t(rs,gs,bs)
-       enddo
-    enddo
-  end subroutine shade
-
+  ! shade.kumac
   subroutine shading_setup()
     !cr_colors(0) = color_rgb_t(0,0,0)           ! BLACK
     !cr_colors(255) = color_rgb_t(255,255,255)   ! WHITE
 
     ! The first call to set_shade() MUST be this INITIALIZATION
-    call set_shade( -1,0,0,0)
+    call set_shade( -1,0.0,0.0,0.0)
 
-    call set_shade(  0,  0,  0,128)
-    call set_shade( 40,  0,  0,255)
-    call set_shade(100,  0,255,255)
-    call set_shade(120,  0,255,128)
-    call set_shade(160,255,255,  0)
-    call set_shade(255,128,  0,  0)
+    call set_shade(  0,0.0,0.0,0.5)
+    call set_shade( 40,0.0,0.0,1.0)
+    call set_shade(100,0.0,1.0,1.0)
+    call set_shade(120,0.0,1.0,0.5)
+    call set_shade(160,1.0,1.0,0.0)
+    call set_shade(255,1.0,0.0,0.0)
     call shade()
   end subroutine shading_setup
 
