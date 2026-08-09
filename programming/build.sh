@@ -6,8 +6,9 @@
 ##
 ##     ./build.sh
 ##
-##   or (on macOS+MacPorts, for example after installing the right bash > 4.0)
+##   or (on old macOS+MacPorts, for example after installing the right bash > 4.0)
 ##
+##     sed -i.bkp 's/-framework OpenGL//' build.sh
 ##     CXX=g++-mp-15 FC=gfortran-mp-15 bash ./build.sh
 ##
 ##   If the compiler does not support f2023 standard, you can change
