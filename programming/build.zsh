@@ -18,9 +18,10 @@ setopt +o nomatch
 ##
 ##     FC='gfortran -march=native' ./build.zsh
 ##
-##   Maybe you need this on GNU/Linux Mint to avoid a 'ld' warning:
+##   If the compiler does not support f2023 standard, you can change
+##   the standard with:
 ##
-##     FC="gfortran -z noexecstack" ./build.zsh
+##     sed -i.bkp 's/f2023/f2018/' build.zsh
 ##
 ##   On macOS+Homebrew+zsh:
 ##
@@ -684,7 +685,8 @@ fi
 ## ----------------------------------------------------------
 
 ## On GNU/Linux the linker 'ld' emits a warning which can be avoided
-## adding '-z noexecstack' to the command line of FC
+## adding '-z noexecstack' to the command line of FC WHEN linking!
+
 cd "${PROGRAMMING_DIR}/three_body_problem" || exit 1
 
 program_name="three_body_problem"

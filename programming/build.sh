@@ -10,10 +10,6 @@
 ##
 ##     CXX=g++-mp-15 FC=gfortran-mp-15 bash ./build.sh
 ##
-##   Maybe you need this on GNU/Linux Mint to avoid a 'ld' warning:
-##
-##     FC="gfortran -z noexecstack" ./build.sh
-##
 ##   If the compiler does not support f2023 standard, you can change
 ##   the standard with:
 ##
@@ -860,7 +856,8 @@ fi
 ## ----------------------------------------------------------
 
 ## On GNU/Linux the linker 'ld' emits a warning which can be avoided
-## adding '-z noexecstack' to the command line of FC
+## adding '-z noexecstack' to the command line of FC WHEN linking!
+
 cd "${PROGRAMMING_DIR}/three_body_problem"
 
 program_name="three_body_problem"
