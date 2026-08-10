@@ -1,7 +1,7 @@
 !
 !   rm -rf *.mod; \
 !     gfortran[-mp-X] [-g3 -fbacktrace -fcheck=all] [-march=native] \
-!       -Wall -Wno-unused-function -std=f2018 [-fmax-errors=1] -O3 \
+!       -Wall -Wno-unused-function -std=f2023 [-fmax-errors=1] -O3 \
 !       solve_equation.f90 -o solve_equation$EXE $LIBS; \
 !   rm -rf *.mod
 !
@@ -27,7 +27,9 @@
 !
 ! RUN
 !
-!   ./solve_equation 0.5E-12
+!   ./solve_equation 100 -2 0.5E-12
+!   ./solve_equation 1000 -1.905
+!   ./solve_equation 5 -1.905
 !   ./solve_equation
 !
 ! References
@@ -130,7 +132,9 @@ contains
        write(*,*)
        write(*,*) 'TOO MANY ITERATIONS'
        write(*,*) 'I = ', i
-       write(*,*)
+
+       ! Correction for MAXIT
+       i = i-1
     end if
 
     maxit = i
@@ -343,6 +347,11 @@ contains
     lmt(2) = .true.
     mf = 2
 
+    ! To silence gfortran-16.2 '-Wmaybe-uninitialized' warning =====
+    d = 0
+    fd = 0
+    ! =====
+
     interpolate: do
        c = a
        fc = fa
@@ -464,9 +473,9 @@ program solve_equation
   !
   ! In this command line,
   !
-  !   ./solve_nonlinear.out 0.5E-12
+  !   ./solve_nonlinear.out 100
   !
-  ! we have 2 arguments: the program name and the number '0.5E-12'
+  ! we have 2 arguments: the program name and the number '100'
   !
   if (i > 4) stop ': USAGE: ./solve_nonlinear.out [MAXITER [X0 [EPS]]]'
 
@@ -491,41 +500,41 @@ program solve_equation
   eps = eps0
   niter = maxiter
   x = fixed_point(x0,eps,niter,phi)
-  call print_result(format_str)
+  call print_result('FIXED_POINT','PHI',format_str)
 
   eps = eps0
   niter = maxiter
   x = fixed_point(x0,eps,niter,phi1)
-  call print_result(format_str)
+  call print_result('FIXED_POINT','PHI1',format_str)
 
   eps = eps0
   niter = maxiter
   x = fixed_point(x0,eps,niter,phi2)
-  call print_result(format_str)
+  call print_result('FIXED_POINT','PHI2',format_str)
 
   x0 = 1.0_WP
   eps = eps0
   niter = maxiter
   x = fixed_point(x0,eps,niter,phi3)
-  call print_result(format_str)
+  call print_result('FIXED_POINT','PHI3',format_str)
 
   x0 = 2.0_WP
   eps = eps0
   niter = maxiter
   x = fixed_point(x0,eps,niter,phi4)
-  call print_result(format_str)
+  call print_result('FIXED_POINT','PHI4',format_str)
 
   x0 = 3.5_WP
   eps = eps0
   niter = maxiter
   x = fixed_point(x0,eps,niter,phi5)
-  call print_result(format_str)
+  call print_result('FIXED_POINT','PHI5',format_str)
 
   x0 = 4.0_WP
   eps = eps0
   niter = maxiter
   x = fixed_point(x0,eps,niter,phi6)
-  call print_result(format_str)
+  call print_result('FIXED_POINT','PHI6',format_str)
 
   eps = eps0
   niter = maxiter
@@ -535,6 +544,8 @@ program solve_equation
     b0 = 3.2_WP
 
     write(*,*)
+    write(*,*) 'METHOD  : ', 'ZEROIN'
+    write(*,*) 'FUNCTION: ', 'F'
     write(*,format_str) 'MAXF = ', maxf,' A0 = ', a0, ' B0  = ', B0
 
     x = zeroin(a0,b0,eps,maxf,f,2)
@@ -546,6 +557,8 @@ program solve_equation
     b0 = 5.0_WP
 
     write(*,*)
+    write(*,*) 'METHOD  : ', 'ZEROIN'
+    write(*,*) 'FUNCTION: ', 'F1'
     write(*,format_str) 'MAXF = ', maxf,' A0 = ', a0, ' B0  = ', B0
 
     x = zeroin(a0,b0,eps,maxf,f1,2)
@@ -556,9 +569,11 @@ program solve_equation
 
 contains
 
-  subroutine print_result(fmt)
-    character(len=*), intent(in) :: fmt
+  subroutine print_result(method_str,fcn_str,fmt)
+    character(len=*), intent(in) :: method_str, fcn_str, fmt
     write(*,*)
+    write(*,*) 'METHOD  : ', method_str
+    write(*,*) 'FUNCTION: ', fcn_str
     write(*,fmt) 'MAXITER = ', maxiter,' X0 = ', x0, ' EPS0 = ', eps0
     write(*,fmt) 'NITER = ', niter,' X = ', x, ' DELTA = ', eps
     write(*,*)
